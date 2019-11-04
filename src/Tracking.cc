@@ -52,10 +52,15 @@ namespace ORB_SLAM2
 
 void Tracking::RecomputeIMUBiasAndCurrentNavstate(NavState& nscur)
 {
+    cout << "++++++" << endl;
     size_t N = mv20FramesReloc.size();
 
     //Test log
-    if(N!=20) cerr<<"Frame vector size not 20 to compute bias after reloc??? size: "<<mv20FramesReloc.size()<<endl;
+    if(N!=20) 
+    {
+        cerr<<"Frame vector size not 20 to compute bias after reloc??? size: "<<mv20FramesReloc.size()<<endl;
+        return ;
+    }
 
     // Estimate gyr bias
     Vector3d bg = Optimizer::OptimizeInitialGyroBias(mv20FramesReloc);
@@ -216,7 +221,7 @@ void Tracking::RecomputeIMUBiasAndCurrentNavstate(NavState& nscur)
     nscur.Set_BiasAcc(ba);
     nscur.Set_DeltaBiasGyr(Vector3d::Zero());
     nscur.Set_DeltaBiasAcc(Vector3d::Zero());
-
+    cout << "---------" << endl;
     //mv20FramesReloc
 }
 
@@ -224,7 +229,6 @@ bool Tracking::TrackLocalMapWithIMU(bool bMapUpdated)
 {
     // We have an estimation of the camera pose and some map points tracked in the frame.
     // We retrieve the local map and try to find matches to points in the local map.
-
     UpdateLocalMap();
 
     SearchLocalPoints();
@@ -241,15 +245,18 @@ bool Tracking::TrackLocalMapWithIMU(bool bMapUpdated)
         if(mCurrentFrame.GetNavState().Get_dBias_Gyr().norm() > 1e-6) cerr<<"TrackLocalMapWithIMU current Frame dBias gyr not zero"<<endl;
 
         //
+        cout << "optimize bg1." << endl;
         Optimizer::PoseOptimization(&mCurrentFrame,mpLastKeyFrame,imupreint,mpLocalMapper->GetGravityVec(),true);
+        cout << "optimize ed1." << endl;
     }
     // Map not updated, optimize with last Frame
     else
     {
         // Get initial pose from Last Frame
         IMUPreintegrator imupreint = GetIMUPreIntSinceLastFrame(&mCurrentFrame, &mLastFrame);
-
+        cout << "optimize bg2." << endl;
         Optimizer::PoseOptimization(&mCurrentFrame,&mLastFrame,imupreint,mpLocalMapper->GetGravityVec(),true);
+        cout << "optimize ed2." << endl;
     }
 
     mnMatchesInliers = 0;
@@ -275,7 +282,7 @@ bool Tracking::TrackLocalMapWithIMU(bool bMapUpdated)
 
         }
     }
-
+        cout << "over" << endl;
     // Decide if the tracking was succesful
     // More restrictive if there was a relocalization recently
     if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50)
@@ -816,7 +823,10 @@ void Tracking::Track()
             else
             {
                 bOK = Relocalization();
-                if(bOK) cout<<"Relocalized. id: "<<mCurrentFrame.mnId<<endl;
+                if(bOK) 
+                {
+                    cout << " Relocalization successfully!!!" << endl;
+                }
             }
         }
         else
@@ -824,7 +834,6 @@ void Tracking::Track()
             // Localization Mode: Local Mapping is deactivated
             cerr<<"Localization mode not supported yet"<<endl;
         }
-
         mCurrentFrame.mpReferenceKF = mpReferenceKF;
 
         // If we have an initial estimation of the camera pose and matching. Track the local map.
@@ -842,11 +851,15 @@ void Tracking::Track()
                     if(mbRelocBiasPrepare)
                     {
                         // 20 Frames after reloc, track with only vision
+                        cout << "bg track local map" << endl;
                         bOK = TrackLocalMap();
+                        cout << "ed track local map " << bOK << endl;
                     }
                     else
                     {
+                        cout << "track local imu motion.bg." << endl;
                         bOK = TrackLocalMapWithIMU(bMapUpdated);
+                        cout << "track local imu motion.ed." << endl;
                     }
                 }
 #endif
@@ -857,16 +870,15 @@ void Tracking::Track()
             // Localization Mode: Local Mapping is deactivated
             cerr<<"Localization mode not supported yet"<<endl;
         }
-
+       
         if(bOK)
         {
             mState = OK;
-
             // Add Frames to re-compute IMU bias after reloc
             if(mbRelocBiasPrepare)
             {
                 mv20FramesReloc.push_back(mCurrentFrame);
-
+                
                 // Before creating new keyframe
                 // Use 20 consecutive frames to re-compute IMU bias
                 if(mCurrentFrame.mnId == mnLastRelocFrameId+20-1)
@@ -940,8 +952,8 @@ void Tracking::Track()
                 MapPoint* pMP = *lit;
                 delete pMP;
             }
+            
             mlpTemporalPoints.clear();
-
 
             // Check if we need to insert a new keyframe
             if(NeedNewKeyFrame() || mbCreateNewKFAfterReloc)
@@ -966,10 +978,11 @@ void Tracking::Track()
                 mpLocalMapper->SetFirstVINSInited(false);
             }
         }
-
+        
         // Reset if the camera get lost soon after initialization
         if(mState==LOST)
         {
+            
             //if(mpMap->KeyFramesInMap()<=5)
             if(!mpLocalMapper->GetVINSInited())
             {
@@ -1100,9 +1113,9 @@ void Tracking::MonocularInitialization()
 
         // Find correspondences
         ORBmatcher matcher(0.9,true);
-        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,500);
-        //int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
-
+        //int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,500);
+        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
+        
         // Check if there are enough correspondences
         if(nmatches<100)
         {
@@ -1117,6 +1130,7 @@ void Tracking::MonocularInitialization()
 
         if(mpInitializer->Initialize(mCurrentFrame, mvIniMatches, Rcw, tcw, mvIniP3D, vbTriangulated))
         {
+            cout << " init count : " << nmatches << endl;
             for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
             {
                 if(mvIniMatches[i]>=0 && !vbTriangulated[i])
@@ -1398,8 +1412,8 @@ bool Tracking::TrackWithMotionModel()
     // Project points seen in previous frame
     int th;
     if(mSensor!=System::STEREO)
-        //th=15;
-        th = 100;
+        th=15;
+        // th = 100;
     else
         th=7;
     int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR);
@@ -1451,13 +1465,15 @@ bool Tracking::TrackLocalMap()
 {
     // We have an estimation of the camera pose and some map points tracked in the frame.
     // We retrieve the local map and try to find matches to points in the local map.
-
+    
+    
     UpdateLocalMap();
 
     SearchLocalPoints();
 
     // Optimize Pose
     Optimizer::PoseOptimization(&mCurrentFrame);
+    
     mnMatchesInliers = 0;
 
     // Update MapPoints Statistics
@@ -1481,7 +1497,6 @@ bool Tracking::TrackLocalMap()
 
         }
     }
-
     // Decide if the tracking was succesful
     // More restrictive if there was a relocalization recently
     if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50)

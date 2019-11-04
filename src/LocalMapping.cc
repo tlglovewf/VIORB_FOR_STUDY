@@ -184,15 +184,17 @@ void LocalMapping::VINSInitThread()
             break;
     }
 }
-
+#define LOGEOUT(x)  std::cout << x << std::endl;
+#define WRITELOG 0
 bool LocalMapping::TryInitVIO(void)
 {
     if(mpMap->KeyFramesInMap()<=mnLocalWindowSize)
         return false;
-
+    LOGEOUT("begin tryinit vio .")
     static bool fopened = false;
     static ofstream fgw,fscale,fbiasa,fcondnum,ftime,fbiasg;
     string tmpfilepath = ConfigParam::getTmpFilePath();
+#if WRITELOG
     if(!fopened)
     {
         // Need to modify this to correct path
@@ -217,9 +219,10 @@ bool LocalMapping::TryInitVIO(void)
         ftime<<std::fixed<<std::setprecision(6);
         fbiasg<<std::fixed<<std::setprecision(6);
     }
+#endif
 
     Optimizer::GlobalBundleAdjustemnt(mpMap, 10);
-
+    
     // Extrinsics
     cv::Mat Tbc = ConfigParam::GetMatTbc();
     cv::Mat Rbc = Tbc.rowRange(0,3).colRange(0,3);
@@ -267,7 +270,7 @@ bool LocalMapping::TryInitVIO(void)
     // Try to compute initial gyro bias, using optimization with Gauss-Newton
     Vector3d bgest = Optimizer::OptimizeInitialGyroBias(vTwc,vIMUPreInt);
     //Vector3d bgest = Optimizer::OptimizeInitialGyroBias(vScaleGravityKF);
-
+    LOGEOUT("initial gyrobias");
     // Update biasg and pre-integration in LocalWindow. Remember to reset back to zero
     for(int i=0;i<N;i++)
     {
@@ -474,7 +477,7 @@ bool LocalMapping::TryInitVIO(void)
     Eigen::Matrix3d Rwieig_ = RWIeig*Sophus::SO3::exp(dthetaeig).matrix();
     cv::Mat Rwi_ = Converter::toCvMat(Rwieig_);
 
-
+#if WRITELOG
     // Debug log
     {
         cv::Mat gwbefore = Rwi*GI;
@@ -503,7 +506,7 @@ bool LocalMapping::TryInitVIO(void)
             <<Rwieig_(2,0)<<" "<<Rwieig_(2,1)<<" "<<Rwieig_(2,2)<<endl;
         fRwi.close();
     }
-
+#endif 
 
     // ********************************
     // Todo:
@@ -843,6 +846,7 @@ bool LocalMapping::TryInitVIO(void)
         }
 
         SetFlagInitGBAFinish(true);
+        LOGEOUT("VIO initial successfully.");
     }
 
     for(int i=0;i<N;i++)
@@ -850,7 +854,7 @@ bool LocalMapping::TryInitVIO(void)
         if(vKFInit[i])
             delete vKFInit[i];
     }
-
+    
     return bVIOInited;
 }
 
@@ -966,7 +970,9 @@ void LocalMapping::Run()
                     else
                     {
                         //Optimizer::LocalBundleAdjustmentNavStatePRV(mpCurrentKeyFrame,mlLocalKeyFrames,&mbAbortBA, mpMap, mGravityVec, this);
+                        cout << "begin local ba " << endl;
                         Optimizer::LocalBAPRVIDP(mpCurrentKeyFrame,mlLocalKeyFrames,&mbAbortBA, mpMap, mGravityVec, this);
+                        cout << "end local ba " << endl;
                     }
                 }
 

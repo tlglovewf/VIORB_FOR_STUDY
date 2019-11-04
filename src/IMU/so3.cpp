@@ -136,7 +136,11 @@ SO3
 void SO3
 ::operator=(const SO3 & other)
 {
-  this->unit_quaternion_ = other.unit_quaternion_;
+  // this->unit_quaternion_ = other.unit_quaternion_;
+  this->unit_quaternion_.w() = other.unit_quaternion_.w();
+  this->unit_quaternion_.x() = other.unit_quaternion_.x();
+  this->unit_quaternion_.y() = other.unit_quaternion_.y();
+  this->unit_quaternion_.z() = other.unit_quaternion_.z();
 }
 
 SO3 SO3

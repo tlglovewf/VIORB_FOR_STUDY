@@ -21,6 +21,7 @@ public:
     NavState();
     NavState(const NavState& _ns);
 
+    void operator=(const NavState& _ns);
     //Quaterniond Get_qR(){return _qR;}     // rotation
     Sophus::SO3 Get_R() const{return _R;}
     //Matrix3d Get_RotMatrix(){return _qR.toRotationMatrix();}   // rotation matrix

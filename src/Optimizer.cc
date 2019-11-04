@@ -104,7 +104,7 @@ void Optimizer::LocalBAPRVIDP(KeyFrame *pCurKF, const std::list<KeyFrame*> &lLoc
             cerr<<"pKFPrevLocal is Bad?"<<endl;
     }
     // Test log
-    else {cerr<<"pKFPrevLocal is NULL?"<<endl;}
+    else {cerr<<"pKFPrevLocal is NULL?"<<endl;return;}
     // Covisible KeyFrames
     for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
     {
@@ -241,10 +241,17 @@ void Optimizer::LocalBAPRVIDP(KeyFrame *pCurKF, const std::list<KeyFrame*> &lLoc
     for(list<KeyFrame*>::const_iterator lit=lLocalKeyFrames.begin(), lend=lLocalKeyFrames.end(); lit!=lend; lit++)
     {
         KeyFrame* pKF1 = *lit;                      // Current KF, store the IMU pre-integration between previous-current
-        if(!pKF1) cerr<<"pKF1"<<endl;
+        if(!pKF1) 
+        {
+            cerr<<"pKF1 is NULL" << endl;
+            return ;
+        }
         KeyFrame* pKF0 = pKF1->GetPrevKeyFrame();   // Previous KF
-
-        if(!pKF1 || !pKF0) cerr<<"pKF1="<<(size_t)pKF1<<", pKF0="<<(size_t)pKF0<<endl;
+        if(!pKF0)
+        {
+            cerr << "pKF0 is NULL" << endl;
+            return;
+        }
         // PVR edge
         {
             // PR0, PR1, V0, V1, B0
@@ -966,7 +973,7 @@ void Optimizer::LocalBundleAdjustmentNavStatePRV(KeyFrame *pCurKF, const std::li
             cerr<<"pKFPrevLocal is Bad?"<<endl;
     }
     // Test log
-    else {cerr<<"pKFPrevLocal is NULL?"<<endl;}
+    else {cerr<<"pKFPrevLocal is NULL?"<<endl;return;}
     // Covisible KeyFrames
     for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
     {
@@ -1690,9 +1697,8 @@ int Optimizer::PoseOptimization(Frame *pFrame, Frame* pLastFrame, const IMUPrein
     g2o::SparseOptimizer optimizer;
     g2o::BlockSolverX::LinearSolverType * linearSolver;
 
-    //linearSolver = new g2o::LinearSolverDense<g2o::BlockSolverX::PoseMatrixType>();
-    linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolverX::PoseMatrixType>();
-    // linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolverX::PoseMatrixType>();
+    linearSolver = new g2o::LinearSolverDense<g2o::BlockSolverX::PoseMatrixType>();
+    // linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolverX::PoseMatrixType>();
 
     g2o::BlockSolverX * solver_ptr = new g2o::BlockSolverX(linearSolver);
 
@@ -2015,6 +2021,7 @@ int Optimizer::PoseOptimization(Frame *pFrame, Frame* pLastFrame, const IMUPrein
     pFrame->UpdatePoseFromNS(ConfigParam::GetMatTbc());
 
     // Compute marginalized Hessian H and B, H*x=B, H/B can be used as prior for next optimization in PoseOptimization
+
     if(bComputeMarg)
     {
         std::vector<g2o::OptimizableGraph::Vertex*> margVerteces;
@@ -2023,15 +2030,17 @@ int Optimizer::PoseOptimization(Frame *pFrame, Frame* pLastFrame, const IMUPrein
 
         g2o::SparseBlockMatrixXd spinv;
         optimizer.computeMarginals(spinv, margVerteces);
-        // spinv include 2 blocks, 9x9-(0,0) for PVR, 6x6-(1,1) for Bias
-        Matrix<double,15,15> margCov = Matrix<double,15,15>::Zero();
-        margCov.topLeftCorner(9,9) = spinv.block(0,0)->eval();
-        margCov.topRightCorner(9,6) = spinv.block(0,1)->eval();
-        margCov.bottomLeftCorner(6,9) = spinv.block(1,0)->eval();
-        margCov.bottomRightCorner(6,6) = spinv.block(1,1)->eval();
-        pFrame->mMargCovInv = margCov.inverse();
-        pFrame->mNavStatePrior = ns_recov;
-
+        if( spinv.cols() > 1 && spinv.rows() > 1)
+        {
+            // spinv include 2 blocks, 9x9-(0,0) for PVR, 6x6-(1,1) for Bias
+            Matrix<double,15,15> margCov = Matrix<double,15,15>::Zero();
+            margCov.topLeftCorner(9,9) = spinv.block(0,0)->eval();
+            margCov.topRightCorner(9,6) = spinv.block(0,1)->eval();
+            margCov.bottomLeftCorner(6,9) = spinv.block(1,0)->eval();
+            margCov.bottomRightCorner(6,6) = spinv.block(1,1)->eval();
+            pFrame->mMargCovInv = margCov.inverse();    
+            pFrame->mNavStatePrior = ns_recov;
+        }
         //Debug log
         //cout<<"inv MargCov 2: "<<endl<<pFrame->mMargCovInv<<endl;
     }
@@ -2063,9 +2072,8 @@ int Optimizer::PoseOptimization(Frame *pFrame, KeyFrame* pLastKF, const IMUPrein
     g2o::SparseOptimizer optimizer;
     g2o::BlockSolverX::LinearSolverType * linearSolver;
 
-    //linearSolver = new g2o::LinearSolverDense<g2o::BlockSolverX::PoseMatrixType>();
-    linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolverX::PoseMatrixType>();
-    // linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolverX::PoseMatrixType>();
+    linearSolver = new g2o::LinearSolverDense<g2o::BlockSolverX::PoseMatrixType>();
+    // linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolverX::PoseMatrixType>();
 
     g2o::BlockSolverX * solver_ptr = new g2o::BlockSolverX(linearSolver);
 
@@ -2285,21 +2293,25 @@ int Optimizer::PoseOptimization(Frame *pFrame, KeyFrame* pLastKF, const IMUPrein
     pFrame->UpdatePoseFromNS(ConfigParam::GetMatTbc());
 
     // Compute marginalized Hessian H and B, H*x=B, H/B can be used as prior for next optimization in PoseOptimization
+
     if(bComputeMarg)
     {
         std::vector<g2o::OptimizableGraph::Vertex*> margVerteces;
         margVerteces.push_back(optimizer.vertex(FramePVRId));
         margVerteces.push_back(optimizer.vertex(FrameBiasId));
-
         //TODO: how to get the joint marginalized covariance of PVR&Bias
         g2o::SparseBlockMatrixXd spinv;
         optimizer.computeMarginals(spinv, margVerteces);
+        if((spinv.rows() > 1) && (spinv.cols() > 1))
+        {
+            Matrix<double,15,15> margCovInv = Matrix<double,15,15>::Zero();
+            margCovInv.topLeftCorner(9,9) = spinv.block(0,0)->inverse();
+            margCovInv.bottomRightCorner(6,6) = spinv.block(1,1)->inverse();
+            pFrame->mMargCovInv = margCovInv;
+            pFrame->mNavStatePrior = ns_recov;
+        }
         // spinv include 2 blocks, 9x9-(0,0) for PVR, 6x6-(1,1) for Bias
-        Matrix<double,15,15> margCovInv = Matrix<double,15,15>::Zero();
-        margCovInv.topLeftCorner(9,9) = spinv.block(0,0)->inverse();
-        margCovInv.bottomRightCorner(6,6) = spinv.block(1,1)->inverse();
-        pFrame->mMargCovInv = margCovInv;
-        pFrame->mNavStatePrior = ns_recov;
+        
     }
 
     //Test log
@@ -2373,7 +2385,7 @@ void Optimizer::LocalBundleAdjustmentNavState(KeyFrame *pCurKF, const std::list<
             cerr<<"pKFPrevLocal is Bad?"<<endl;
     }
     // Test log
-    else {cerr<<"pKFPrevLocal is NULL?"<<endl;}
+    else {cerr<<"pKFPrevLocal is NULL?"<<endl;return;}
     // Covisible KeyFrames
     for(list<MapPoint*>::iterator lit=lLocalMapPoints.begin(), lend=lLocalMapPoints.end(); lit!=lend; lit++)
     {
@@ -3534,9 +3546,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     g2o::SparseOptimizer optimizer;
     g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
 
-    //linearSolver = new g2o::LinearSolverDense<g2o::BlockSolver_6_3::PoseMatrixType>();
-    linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
-    // linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolver_6_3::PoseMatrixType>();
+    linearSolver = new g2o::LinearSolverDense<g2o::BlockSolver_6_3::PoseMatrixType>();
+    // linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
 
     g2o::BlockSolver_6_3 * solver_ptr = new g2o::BlockSolver_6_3(linearSolver);
 

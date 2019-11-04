@@ -3,7 +3,7 @@
 # 1: realtime, 0: non-realtime
 test.RealTime: 0
 # Time for visual-inertial initialization
-test.VINSInitTime: 1.0 #3.0 #15.0
+test.VINSInitTime: 3.0 #3.0 #15.0
 
 # Modify test.InitVIOTmpPath and bagfile to the correct path
 # Path to save tmp files/results

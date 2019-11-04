@@ -1,5 +1,6 @@
 #include "NavState.h"
-
+#include <iostream>
+using namespace std;
 namespace ORB_SLAM2
 {
 
@@ -23,6 +24,17 @@ NavState::NavState(const NavState &_ns):
     _dBias_g(_ns._dBias_g), _dBias_a(_ns._dBias_a)
 {
     //normalizeRotation();
+}
+
+void NavState::operator=(const NavState& _ns)
+{
+    _P = _ns._P;
+    _V = _ns._V;
+    _R = _ns._R;
+    _BiasGyr = _ns._BiasGyr;
+    _BiasAcc = _ns._BiasAcc;
+    _dBias_g = _ns._dBias_g;
+    _dBias_a = _ns._dBias_a;
 }
 
 void NavState::IncSmall(Vector15d update)
