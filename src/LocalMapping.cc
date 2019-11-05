@@ -1021,7 +1021,8 @@ void LocalMapping::Run()
         if(CheckFinish())
             break;
 
-        usleep(3000);
+        // usleep(3000);
+        usleep(2000);
     }
 
     SetFinish();
@@ -1376,8 +1377,8 @@ void LocalMapping::SearchInNeighbors()
 {
     // Retrieve neighbor keyframes
     int nn = 10;
-    if(mbMonocular)
-        nn=20;
+    // if(mbMonocular)
+    //     nn=20;
     const vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
     vector<KeyFrame*> vpTargetKFs;
     for(vector<KeyFrame*>::const_iterator vit=vpNeighKFs.begin(), vend=vpNeighKFs.end(); vit!=vend; vit++)
@@ -1567,6 +1568,9 @@ void LocalMapping::KeyFrameCulling()
     vector<KeyFrame*> vpLocalKeyFrames = mpCurrentKeyFrame->GetVectorCovisibleKeyFrames();
 
     KeyFrame* pOldestLocalKF = mlLocalKeyFrames.front();
+    if(NULL == pOldestLocalKF)
+        return;
+
     KeyFrame* pPrevLocalKF = pOldestLocalKF->GetPrevKeyFrame();
     KeyFrame* pNewestLocalKF = mlLocalKeyFrames.back();
     // Test log

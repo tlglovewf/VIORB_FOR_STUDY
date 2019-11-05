@@ -35,7 +35,7 @@ Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer
     float fps = fSettings["Camera.fps"];
     if(fps<1)
         fps=30;
-    mT = 1e3/fps;
+    mT = 1;//1e3/fps;
 
     mImageWidth = fSettings["Camera.width"];
     mImageHeight = fSettings["Camera.height"];
@@ -134,6 +134,9 @@ void Viewer::Run()
         pangolin::FinishFrame();
 
         cv::Mat im = mpFrameDrawer->DrawFrame();
+
+        cv::resize(im,im,cv::Size(im.cols >> 2, im.rows >> 2));
+
         cv::imshow("ORB-SLAM2: Current Frame",im);
         cv::waitKey(mT);
 

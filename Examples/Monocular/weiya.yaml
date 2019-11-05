@@ -1,8 +1,35 @@
 %YAML:1.0
 
+
+#------------------------------------------
+# Imu Parameters. Adjust them!
+#------------------------------------------
+# 1: realtime, 0: non-realtime
+IMU.RealTime: 0
+# Time for visual-inertial initialization
+IMU.VINSInitTime: 3.0 #3.0 #15.0
+## For good initialization (no movement at the beginning for some bag)
+IMU.DiscardTime: 0
+# acc=acc*9.8, if below is 1
+IMU.multiplyG: 0
+
+# Local Window size
+LocalMapping.LocalWindowSize: 10
+
 #--------------------------------------------------------------------------------------------
 # Camera Parameters. Adjust them!
 #--------------------------------------------------------------------------------------------
+
+# camera-imu frame transformation, Pi = Tic * Pc
+Camera.Tbc:
+ [9.9999387847709542e-01, 2.6663230532553918e-03, 2.2657735349816566e-03,  -9.4636705423139389e-01 ,
+  -2.2538880722602797e-03,-4.4522168210866502e-03, 9.9998754879945162e-01, 5.7482509076878734e-02,
+  2.6763775693775475e-03, -9.9998653415271221e-01,-4.4461799730128784e-03, 4.6803282429872986e-02,
+  0.0, 0.0, 0.0, 1.0]
+
+
+# Timestamp shift. Timage = Timu + image_delay
+Camera.delaytoimu: 0
 
 # Camera calibration and distortion parameters (OpenCV) 
 Camera.fx: 2.3472457864004355e+03

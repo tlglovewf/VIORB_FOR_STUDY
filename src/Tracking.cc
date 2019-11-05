@@ -1113,8 +1113,8 @@ void Tracking::MonocularInitialization()
 
         // Find correspondences
         ORBmatcher matcher(0.9,true);
-        //int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,500);
-        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
+        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,500);
+        // int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
         
         // Check if there are enough correspondences
         if(nmatches<100)
@@ -1147,6 +1147,12 @@ void Tracking::MonocularInitialization()
             tcw.copyTo(Tcw.rowRange(0,3).col(3));
             mCurrentFrame.SetPose(Tcw);
 
+            {//add by tu
+                // cout << Rcw << endl;
+                // cout << tcw << endl;
+                mVelocity = Tcw;
+            }
+            
             CreateInitialMapMonocular();
         }
     }
@@ -1219,7 +1225,7 @@ void Tracking::CreateInitialMapMonocular()
 
     // Set median depth to 1
     float medianDepth = pKFini->ComputeSceneMedianDepth(2);
-    float invMedianDepth = 1.0f/medianDepth;
+    float invMedianDepth = 1.0f;// 1.0f/medianDepth;
 
     if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
     {
@@ -1412,8 +1418,7 @@ bool Tracking::TrackWithMotionModel()
     // Project points seen in previous frame
     int th;
     if(mSensor!=System::STEREO)
-        th=15;
-        // th = 100;
+        th = 100;
     else
         th=7;
     int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR);
@@ -1457,7 +1462,9 @@ bool Tracking::TrackWithMotionModel()
         mbVO = nmatchesMap<10;
         return nmatches>20;
     }
-
+    {
+        cout << "track with motion count : " << nmatchesMap << endl;
+    }
     return nmatchesMap>=10;
 }
 
@@ -1511,6 +1518,8 @@ bool Tracking::TrackLocalMap()
 
 bool Tracking::NeedNewKeyFrame()
 {
+    return true;
+
     if(mbOnlyTracking)
         return false;
 

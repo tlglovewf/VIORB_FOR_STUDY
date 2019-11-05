@@ -15,26 +15,26 @@ std::string ConfigParam::_tmpFilePath = "";
 double ConfigParam::_nVINSInitTime = 15;
 bool ConfigParam::_bRealTime = true;
 
-ConfigParam::ConfigParam(std::string configfile)
+ConfigParam::ConfigParam(const std::string &configfile)
 {
     cv::FileStorage fSettings(configfile, cv::FileStorage::READ);
 
     std::cout<<std::endl<<std::endl<<"Parameters: "<<std::endl;
-
-    _testDiscardTime = fSettings["test.DiscardTime"];
-    _nVINSInitTime = fSettings["test.VINSInitTime"];
+    std::cout << "config path is " << configfile.c_str() << std::endl;
+    _testDiscardTime = fSettings["IMU.DiscardTime"];
+    _nVINSInitTime = fSettings["IMU.VINSInitTime"];
     std::cout<<"VINS initialize time: "<<_nVINSInitTime<<std::endl;
     std::cout<<"Discart time in test data: "<<_testDiscardTime<<std::endl;
 
-    fSettings["test.InitVIOTmpPath"] >> _tmpFilePath;
-    std::cout<<"save tmp file in "<<_tmpFilePath<<std::endl;
+    // fSettings["IMU.InitVIOTmpPath"] >> _tmpFilePath;
+    // std::cout<<"save tmp file in "<<_tmpFilePath<<std::endl;
 
-    fSettings["bagfile"] >> _bagfile;
-    std::cout<<"open rosbag: "<<_bagfile<<std::endl;
-    fSettings["imutopic"] >> _imuTopic;
-    fSettings["imagetopic"] >> _imageTopic;
-    std::cout<<"imu topic: "<<_imuTopic<<std::endl;
-    std::cout<<"image topic: "<<_imageTopic<<std::endl;
+    // fSettings["bagfile"] >> _bagfile;
+    // std::cout<<"open rosbag: "<<_bagfile<<std::endl;
+    // fSettings["imutopic"] >> _imuTopic;
+    // fSettings["imagetopic"] >> _imageTopic;
+    // std::cout<<"imu topic: "<<_imuTopic<<std::endl;
+    // std::cout<<"image topic: "<<_imageTopic<<std::endl;
 
     _LocalWindowSize = fSettings["LocalMapping.LocalWindowSize"];
     std::cout<<"local window size: "<<_LocalWindowSize<<std::endl;
@@ -79,7 +79,7 @@ ConfigParam::ConfigParam(std::string configfile)
     }
 
     {
-        int tmpBool = fSettings["test.RealTime"];
+        int tmpBool = fSettings["IMU.RealTime"];
         _bRealTime = (tmpBool != 0);
         std::cout<<"whether run realtime? 0/1: "<<_bRealTime<<std::endl;
     }

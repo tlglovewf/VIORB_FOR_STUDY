@@ -93,7 +93,8 @@ cv::Mat FrameDrawer::DrawFrame()
     {
         mnTracked=0;
         mnTrackedVO=0;
-        const float r = 5;
+        const float r = 12;
+        const int sz = 6;
         for(int i=0;i<N;i++)
         {
             if(vbVO[i] || vbMap[i])
@@ -114,7 +115,7 @@ cv::Mat FrameDrawer::DrawFrame()
                 else // This is match to a "visual odometry" MapPoint created in the last frame
                 {
                     cv::rectangle(im,pt1,pt2,cv::Scalar(255,0,0));
-                    cv::circle(im,vCurrentKeys[i].pt,2,cv::Scalar(255,0,0),-1);
+                    cv::circle(im,vCurrentKeys[i].pt,sz,cv::Scalar(255,0,0),-1);
                     mnTrackedVO++;
                 }
             }

@@ -110,7 +110,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     // Compute ratio of scores
     float RH = SH/(SH+SF);
 
-    const float minParallax = 1.0; 
+    const float minParallax = 0.0; 
     // Try to reconstruct from homography or fundamental depending on the ratio (0.40-0.45)
     if(RH>0.40)
         return ReconstructH(vbMatchesInliersH,H,mK,R21,t21,vP3D,vbTriangulated,minParallax,50);
@@ -889,7 +889,7 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
         vP3D[vMatches12[i].first] = cv::Point3f(p3dC1.at<float>(0),p3dC1.at<float>(1),p3dC1.at<float>(2));
         nGood++;
 
-        if(cosParallax<0.99998)
+        // if(cosParallax<0.99998)CheckRT
             vbGood[vMatches12[i].first]=true;
     }
 

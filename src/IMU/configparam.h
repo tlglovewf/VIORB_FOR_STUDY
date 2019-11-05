@@ -12,7 +12,7 @@ class ConfigParam
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    ConfigParam(std::string configfile);
+    ConfigParam(const std::string &configfile);
 
     double _testDiscardTime;
 

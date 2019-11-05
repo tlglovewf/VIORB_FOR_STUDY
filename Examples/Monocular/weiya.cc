@@ -31,6 +31,9 @@
 #include<unistd.h>
 #include "M_DataManager.h"
 
+#include "IMU/imudata.h"
+#include "IMU/configparam.h"
+
 using namespace std;
 
 int main(int argc, char **argv)
@@ -49,6 +52,8 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    ORB_SLAM2::ConfigParam config(cfgpath);
+
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(vocpath,cfgpath,ORB_SLAM2::System::MONOCULAR,true);
 
@@ -61,9 +66,10 @@ int main(int argc, char **argv)
     cout << "Start processing sequence ..." << endl;
     cout << "Images in the sequence: " << nImages << endl << endl;
 
+
     // Main loop
     cv::Mat im;
-    ImgInfoVIter it = M_DataManager::getSingleton()->begin() + 700;
+    ImgInfoVIter it = M_DataManager::getSingleton()->begin() + 600;
     ImgInfoVIter ed = M_DataManager::getSingleton()->end();
     int index = 0;
     for(; it != ed; ++it)
@@ -86,8 +92,23 @@ int main(int argc, char **argv)
         std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
 #endif
 
+        IMURawVector imudatas =  M_DataManager::getSingleton()->getIMUDataFromLastTime(it->second._t);
+        std::vector<ORB_SLAM2::IMUData> vimudata;
+        for( size_t i = 0; i < imudatas.size(); ++i)
+        {
+            const ImuRawData &rawdata = imudatas[i];
+            ORB_SLAM2::IMUData imudata(rawdata._gyro_x,
+                                       rawdata._gyro_y,
+                                       rawdata._gyro_z,
+                                       rawdata._acc_x,
+                                       rawdata._acc_y,
+                                       rawdata._acc_z,rawdata._t);
+            vimudata.emplace_back(imudata);
+        }
+
         // Pass the image to the SLAM system
-        SLAM.TrackMonocular(im,tframe);
+        // SLAM.TrackMonocular(im,tframe);
+        SLAM.TrackMonoVI(im,vimudata,tframe);
 
 #ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
