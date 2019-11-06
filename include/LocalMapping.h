@@ -41,7 +41,6 @@ class Map;
 class LocalMapping
 {
 public:
-    ConfigParam* mpParams;
 
     // KeyFrames in Local Window, for Local BA
     // Insert in ProcessNewKeyFrame()
@@ -102,7 +101,7 @@ protected:
     void SetFlagCopyInitKFs(bool flag) { unique_lock<mutex> lock(mMutexCopyInitKFs); mbCopyInitKFs = flag; }
 
 public:
-    LocalMapping(Map* pMap, const float bMonocular, ConfigParam* pParams);
+    LocalMapping(Map* pMap, const float bMonocular);
 
     void SetLoopCloser(LoopClosing* pLoopCloser);
 

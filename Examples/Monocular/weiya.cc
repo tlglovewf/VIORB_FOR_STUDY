@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     const string pstpath = "/media/navinfo/Bak/Datas/@@1002-0001-190828-00/Output/gray/pstdatas.txt";
     const string imupath = "/media/navinfo/Bak/Datas/@@1002-0001-190828-00/Output/gray/imudatas.txt";
     const string vocpath = "/media/navinfo/Work/GitHub/ORB_SLAM2/Vocabulary/ORBvoc.txt";
-    const string cfgpath = "/media/navinfo/Work/GitHub/ORB_SLAM2/Examples/Monocular/weiya.yaml";
+    const string cfgpath = "/media/navinfo/Work/GitHub/LearnVIORB/Examples/Monocular/weiya.yaml";
 
     vector<double> vTimestamps;
     
@@ -69,8 +69,10 @@ int main(int argc, char **argv)
 
     // Main loop
     cv::Mat im;
-    ImgInfoVIter it = M_DataManager::getSingleton()->begin() + 600;
+    const int st_no = 600;
+    ImgInfoVIter it = M_DataManager::getSingleton()->begin() + st_no;
     ImgInfoVIter ed = M_DataManager::getSingleton()->end();
+    M_DataManager::getSingleton()->setIndicator(st_no);
     int index = 0;
     for(; it != ed; ++it)
     {
@@ -127,8 +129,9 @@ int main(int argc, char **argv)
         else if(index > 0)
             T = tframe - (it - 1)->second._t;
         ++index;
-        if(ttrack<T)
-            usleep(1000);//(T-ttrack)*1e6);
+        // if(ttrack<T)
+        //     usleep(1000);//(T-ttrack)*1e6);
+        usleep(2000);
     }
 
     // Stop all threads

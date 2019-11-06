@@ -7,7 +7,7 @@
 # 1: realtime, 0: non-realtime
 IMU.RealTime: 0
 # Time for visual-inertial initialization
-IMU.VINSInitTime: 3.0 #3.0 #15.0
+IMU.VINSInitTime: 0.0 #3.0 #15.0
 ## For good initialization (no movement at the beginning for some bag)
 IMU.DiscardTime: 0
 # acc=acc*9.8, if below is 1

@@ -46,8 +46,6 @@ class KeyFrameDatabase;
 class LoopClosing
 {
 public:
-    ConfigParam* mpParams;
-
     bool GetMapUpdateFlagForTracking();
     void SetMapUpdateFlagInTracking(bool bflag);
 
@@ -63,7 +61,7 @@ public:
 
 public:
 
-    LoopClosing(Map* pMap, KeyFrameDatabase* pDB, ORBVocabulary* pVoc,const bool bFixScale, ConfigParam* pParams);
+    LoopClosing(Map* pMap, KeyFrameDatabase* pDB, ORBVocabulary* pVoc,const bool bFixScale);
 
     void SetTracker(Tracking* pTracker);
 

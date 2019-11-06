@@ -505,14 +505,13 @@ cv::Mat Tracking::GrabImageMonoVI(const cv::Mat &im, const std::vector<IMUData> 
 //-------------------------------------------------------------------------------------------
 
 Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer,
-                   Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor,ConfigParam* pParams):
+                   Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
     mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
     mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys),
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0)
 {
     mbCreateNewKFAfterReloc = false;
     mbRelocBiasPrepare = false;
-    mpParams = pParams;
 
     // Load camera parameters from settings file
 

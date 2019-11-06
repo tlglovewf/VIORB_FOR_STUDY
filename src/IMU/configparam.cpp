@@ -19,7 +19,7 @@ ConfigParam::ConfigParam(const std::string &configfile)
 {
     cv::FileStorage fSettings(configfile, cv::FileStorage::READ);
 
-    std::cout<<std::endl<<std::endl<<"Parameters: "<<std::endl;
+    std::cout<< fSettings.isOpened() << std::endl << std::endl << "Parameters: " << std::endl;
     std::cout << "config path is " << configfile.c_str() << std::endl;
     _testDiscardTime = fSettings["IMU.DiscardTime"];
     _nVINSInitTime = fSettings["IMU.VINSInitTime"];

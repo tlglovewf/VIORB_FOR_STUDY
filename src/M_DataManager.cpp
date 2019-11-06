@@ -56,6 +56,32 @@ M_DataManager *M_DataManager::getSingleton()
     static M_DataManager instance;
     return &instance;
 }
+//判断浮点型　相等
+static inline bool isSame(double pre, double cur)
+{
+    return fabs(cur - pre) < 1e-6;
+}
+class Cmp
+{
+public:
+    Cmp(double t):_t(t){}
+
+    bool operator()(const ImuRawData &data)
+    {
+        return isSame(data._t,_t);
+    }
+private:
+    double _t;
+};
+
+
+
+void M_DataManager::setIndicator(int index)
+{
+    assert(index < mPoseDatas.size());
+    mIMURawIndicator = std::find_if(mIMURawIndicator,mIMURawDatas.end(),Cmp(mPoseDatas[index].second._t));
+    cout << "indicator : " << mIMURawIndicator->_t << endl;
+}
 
 /*
      * 加载数据
@@ -137,24 +163,6 @@ bool M_DataManager::LoadData(const string &pstpath, const string &imupath)
     return false;
 }
 
-//判断浮点型　相等
-static inline bool isSame(double pre, double cur)
-{
-    return fabs(cur - pre) < 1e-6;
-}
-
-class Cmp
-{
-public:
-    Cmp(double t):_t(t){}
-
-    bool operator()(const ImuRawData &data)
-    {
-        return isSame(data._t,_t);
-    }
-private:
-    double _t;
-};
 
 /* 当前时间到上个时间段内的imu数据集合
      * @param cursec(天秒)
@@ -163,7 +171,10 @@ private:
 IMURawVector M_DataManager::getIMUDataFromLastTime(double cursec)
 {
     //断言　imu数据集不能为空，且传入的时间不能与上次时间一致
-    assert(!mIMURawDatas.empty() && !isSame(mIMURawIndicator->_t,cursec));
+    assert(!mIMURawDatas.empty());// && !isSame(mIMURawIndicator->_t,cursec));
+
+    if(isSame(mIMURawIndicator->_t,cursec))
+        return IMURawVector();
 
     IMURawVIter iter = std::find_if(mIMURawIndicator,mIMURawDatas.end(),Cmp(cursec));
 
@@ -173,7 +184,7 @@ IMURawVector M_DataManager::getIMUDataFromLastTime(double cursec)
     size_t sz = iter - mIMURawIndicator;
     tmp.reserve(sz);
 
-    tmp.assign(mIMURawIndicator,iter + 1);
+    tmp.assign(mIMURawIndicator,iter);
 
     mIMURawIndicator = iter;
 

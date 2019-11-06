@@ -899,11 +899,11 @@ void LocalMapping::DeleteBadInLocalWindow(void)
 //-------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------
 
-LocalMapping::LocalMapping(Map *pMap, const float bMonocular, ConfigParam* pParams):
+LocalMapping::LocalMapping(Map *pMap, const float bMonocular):
     mbMonocular(bMonocular), mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
     mbAbortBA(false), mbStopped(false), mbStopRequested(false), mbNotStop(false), mbAcceptKeyFrames(true)
 {
-    mpParams = pParams;
+
     mnLocalWindowSize = ConfigParam::GetLocalWindowSize();
     cout<<"mnLocalWindowSize:"<<mnLocalWindowSize<<endl;
 

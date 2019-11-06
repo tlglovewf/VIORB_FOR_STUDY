@@ -82,6 +82,11 @@ void Frame::ComputeIMUPreIntSinceLastFrame(const Frame* pLastF, IMUPreintegrator
             cerr<<std::fixed<<std::setprecision(3)<<"dt = "<<dt<<", this vs next time: "<<imu._t<<" vs "<<nextt<<endl;
             std::cerr.unsetf ( std::ios::showbase );                // deactivate showbase
         }
+        else
+        {
+            cout << "dt time is " << dt << endl;
+        }
+        
     }
 }
 
