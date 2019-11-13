@@ -1,13 +1,25 @@
 %YAML:1.0
 
 
+#System setting
+#img start no
+Sys.BeginNo:  955 # 300;
+#img abs path 
+Sys.ImgPath: "/media/navinfo/Bak/Datas/@@1002-0001-191107-00/Output/gray/"
+#pst file abs path
+Sys.PstPath: "/media/navinfo/Bak/Datas/@@1002-0001-191107-00/Output/gray/pst.txt"
+#imu file abs path
+Sys.ImuPath: "/media/navinfo/Bak/Datas/@@1002-0001-191107-00/Output/gray/imu.txt"
+#voc file abs path
+Sys.VocPath: "/media/navinfo/Work/GitHub/ORB_SLAM2/Vocabulary/ORBvoc.txt"
+
 #------------------------------------------
 # Imu Parameters. Adjust them!
 #------------------------------------------
 # 1: realtime, 0: non-realtime
 IMU.RealTime: 0
 # Time for visual-inertial initialization
-IMU.VINSInitTime: 0.0 #3.0 #15.0
+IMU.VINSInitTime: 0.0 #15.0
 ## For good initialization (no movement at the beginning for some bag)
 IMU.DiscardTime: 0
 # acc=acc*9.8, if below is 1
@@ -16,15 +28,17 @@ IMU.multiplyG: 0
 # Local Window size
 LocalMapping.LocalWindowSize: 10
 
+
+
 #--------------------------------------------------------------------------------------------
 # Camera Parameters. Adjust them!
 #--------------------------------------------------------------------------------------------
 
 # camera-imu frame transformation, Pi = Tic * Pc
 Camera.Tbc:
- [9.9999387847709542e-01, 2.6663230532553918e-03, 2.2657735349816566e-03,  -9.4636705423139389e-01 ,
-  -2.2538880722602797e-03,-4.4522168210866502e-03, 9.9998754879945162e-01, 5.7482509076878734e-02,
-  2.6763775693775475e-03, -9.9998653415271221e-01,-4.4461799730128784e-03, 4.6803282429872986e-02,
+ [9.9997695638254791e-01, -6.5911252723575096e-03,1.6259678779657481e-03, -9.6324428571720377e-01 ,
+  -1.6597452745885711e-03,-5.1224518936298204e-03,9.9998550276102560e-01, -3.4703044260081896e-02,
+  -6.5827007770038583e-03, -9.9996515817014431e-01, -5.1332734428329837e-03,7.3972343182943170e-02,
   0.0, 0.0, 0.0, 1.0]
 
 
@@ -32,10 +46,10 @@ Camera.Tbc:
 Camera.delaytoimu: 0
 
 # Camera calibration and distortion parameters (OpenCV) 
-Camera.fx: 2.3472457864004355e+03
-Camera.fy: 2.3472457864004355e+03
-Camera.cx: 2.0462880554199219e+03
-Camera.cy: 1.0890160064697266e+03
+Camera.fx: 2.3423400128719150e+03
+Camera.fy: 2.3423400128719150e+03
+Camera.cx: 2.0462927541732788e+03
+Camera.cy: 1.0844676985740662e+03
 
 Camera.k1: 0.0
 Camera.k2: 0.0

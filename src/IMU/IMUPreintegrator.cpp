@@ -37,21 +37,22 @@ IMUPreintegrator::IMUPreintegrator(const IMUPreintegrator& pre):
 IMUPreintegrator::IMUPreintegrator()
 {
     // delta measurements, position/velocity/rotation(matrix)
-    _delta_P.setZero();    // P_k+1 = P_k + V_k*dt + R_k*a_k*dt*dt/2
-    _delta_V.setZero();    // V_k+1 = V_k + R_k*a_k*dt
-    _delta_R.setIdentity();    // R_k+1 = R_k*exp(w_k*dt).     note: Rwc, Rwc'=Rwc*[w_body]x
+    // _delta_P.setZero();    // P_k+1 = P_k + V_k*dt + R_k*a_k*dt*dt/2
+    // _delta_V.setZero();    // V_k+1 = V_k + R_k*a_k*dt
+    // _delta_R.setIdentity();    // R_k+1 = R_k*exp(w_k*dt).     note: Rwc, Rwc'=Rwc*[w_body]x
 
-    // jacobian of delta measurements w.r.t bias of gyro/acc
-    _J_P_Biasg.setZero();     // position / gyro
-    _J_P_Biasa.setZero();     // position / acc
-    _J_V_Biasg.setZero();     // velocity / gyro
-    _J_V_Biasa.setZero();     // velocity / acc
-    _J_R_Biasg.setZero();   // rotation / gyro
+    // // jacobian of delta measurements w.r.t bias of gyro/acc
+    // _J_P_Biasg.setZero();     // position / gyro
+    // _J_P_Biasa.setZero();     // position / acc
+    // _J_V_Biasg.setZero();     // velocity / gyro
+    // _J_V_Biasa.setZero();     // velocity / acc
+    // _J_R_Biasg.setZero();   // rotation / gyro
 
-    // noise covariance propagation of delta measurements
-    _cov_P_V_Phi.setZero();
+    // // noise covariance propagation of delta measurements
+    // _cov_P_V_Phi.setZero();
 
-    _delta_time = 0;
+    // _delta_time = 0;
+    reset();
 }
 
 void IMUPreintegrator::reset()

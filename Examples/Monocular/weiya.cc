@@ -38,12 +38,14 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-
-    const string imgpath = "/media/navinfo/Bak/Datas/@@1002-0001-190828-00/Output/gray/";
-    const string pstpath = "/media/navinfo/Bak/Datas/@@1002-0001-190828-00/Output/gray/pstdatas.txt";
-    const string imupath = "/media/navinfo/Bak/Datas/@@1002-0001-190828-00/Output/gray/imudatas.txt";
-    const string vocpath = "/media/navinfo/Work/GitHub/ORB_SLAM2/Vocabulary/ORBvoc.txt";
     const string cfgpath = "/media/navinfo/Work/GitHub/LearnVIORB/Examples/Monocular/weiya.yaml";
+    ORB_SLAM2::ConfigParam config(cfgpath);
+
+    const string &imgpath = ORB_SLAM2::ConfigParam::_ImgPath;
+    const string &pstpath = ORB_SLAM2::ConfigParam::_PstPath;
+    const string &imupath = ORB_SLAM2::ConfigParam::_ImuPath;
+    const string &vocpath = ORB_SLAM2::ConfigParam::_VocPath;
+
 
     vector<double> vTimestamps;
     
@@ -52,7 +54,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    ORB_SLAM2::ConfigParam config(cfgpath);
+    
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(vocpath,cfgpath,ORB_SLAM2::System::MONOCULAR,true);
@@ -66,10 +68,9 @@ int main(int argc, char **argv)
     cout << "Start processing sequence ..." << endl;
     cout << "Images in the sequence: " << nImages << endl << endl;
 
-
     // Main loop
     cv::Mat im;
-    const int st_no = 600;
+    const int st_no = ORB_SLAM2::ConfigParam::_BeginNo;
     ImgInfoVIter it = M_DataManager::getSingleton()->begin() + st_no;
     ImgInfoVIter ed = M_DataManager::getSingleton()->end();
     M_DataManager::getSingleton()->setIndicator(st_no);
@@ -99,15 +100,23 @@ int main(int argc, char **argv)
         for( size_t i = 0; i < imudatas.size(); ++i)
         {
             const ImuRawData &rawdata = imudatas[i];
-            ORB_SLAM2::IMUData imudata(rawdata._gyro_x,
-                                       rawdata._gyro_y,
-                                       rawdata._gyro_z,
+            ORB_SLAM2::IMUData imudata(DEG2RAD(rawdata._gyro_x),
+                                       DEG2RAD(rawdata._gyro_y),
+                                       DEG2RAD(rawdata._gyro_z),
                                        rawdata._acc_x,
                                        rawdata._acc_y,
                                        rawdata._acc_z,rawdata._t);
             vimudata.emplace_back(imudata);
         }
-
+        cout.precision(20);
+        cout << "vimudata size " << vimudata.size() << endl;
+        cout << "img data    " << it->second._t << endl;
+        if(!vimudata.empty())
+        {
+            cout << "imu data bg " << vimudata.begin()->_t  << endl;
+            cout << "imu data ed " << vimudata.rbegin()->_t << endl;
+        }
+        
         // Pass the image to the SLAM system
         // SLAM.TrackMonocular(im,tframe);
         SLAM.TrackMonoVI(im,vimudata,tframe);
@@ -129,9 +138,14 @@ int main(int argc, char **argv)
         else if(index > 0)
             T = tframe - (it - 1)->second._t;
         ++index;
-        // if(ttrack<T)
-        //     usleep(1000);//(T-ttrack)*1e6);
-        usleep(2000);
+        //  cout << "++++++++++++++++++++++++ : " << (T - ttrack) << endl;
+         if(ttrack<T)
+         {
+             double ddx = T - ttrack;
+            
+             usleep(ddx * 1e3);
+         }
+         usleep(1e6);
     }
 
     // Stop all threads

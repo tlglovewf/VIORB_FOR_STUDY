@@ -26,6 +26,9 @@
 #include<mutex>
 #include "Converter.h"
 
+
+const int MONOCULAR_INT = 10;
+
 namespace ORB_SLAM2
 {
 using namespace std;
@@ -223,7 +226,7 @@ bool LocalMapping::TryInitVIO(void)
 
     Optimizer::GlobalBundleAdjustemnt(mpMap, 10);
     
-    // Extrinsics
+    // Extrinsics  get cam2imu R and T
     cv::Mat Tbc = ConfigParam::GetMatTbc();
     cv::Mat Rbc = Tbc.rowRange(0,3).colRange(0,3);
     cv::Mat pbc = Tbc.rowRange(0,3).col(3);
@@ -270,7 +273,7 @@ bool LocalMapping::TryInitVIO(void)
     // Try to compute initial gyro bias, using optimization with Gauss-Newton
     Vector3d bgest = Optimizer::OptimizeInitialGyroBias(vTwc,vIMUPreInt);
     //Vector3d bgest = Optimizer::OptimizeInitialGyroBias(vScaleGravityKF);
-    LOGEOUT("initial gyrobias");
+    cout << "init gyro : " << bgest << endl;
     // Update biasg and pre-integration in LocalWindow. Remember to reset back to zero
     for(int i=0;i<N;i++)
     {
@@ -295,7 +298,11 @@ bool LocalMapping::TryInitVIO(void)
         KeyFrameInit* pKF3 = vKFInit[i+2];
         // Delta time between frames
         double dt12 = pKF2->mIMUPreInt.getDeltaTime();
+        cout << "dt12 " << dt12 << " " << pKF2->mIMUPreInt.getDeltaP() << endl;
+        cout << "dt vel " << pKF2->mIMUPreInt.getDeltaV() << endl;
         double dt23 = pKF3->mIMUPreInt.getDeltaTime();
+        cout << "dt23 " << dt23 << " " << pKF3->mIMUPreInt.getDeltaP() << endl; 
+
         // Pre-integrated measurements
         cv::Mat dp12 = Converter::toCvMat(pKF2->mIMUPreInt.getDeltaP());
         cv::Mat dv12 = Converter::toCvMat(pKF2->mIMUPreInt.getDeltaV());
@@ -465,6 +472,7 @@ bool LocalMapping::TryInitVIO(void)
     cv::Mat y = vt2.t()*w2inv*u2.t()*D;
 
     double s_ = y.at<float>(0);
+
     cv::Mat dthetaxy = y.rowRange(1,3);
     cv::Mat dbiasa_ = y.rowRange(3,6);
     Vector3d dbiasa_eig = Converter::toVector3d(dbiasa_);
@@ -528,11 +536,15 @@ bool LocalMapping::TryInitVIO(void)
     {
         // Set NavState , scale and bias for all KeyFrames
         // Scale
-        double scale = s_;
-        mnVINSInitScale = s_;
+       s_ = fmax(0.95,s_);
+        double scale =  s_;
+        mnVINSInitScale =  s_;
         // gravity vector in world frame
         cv::Mat gw = Rwi_*GI;
+        cout << "scale " << s_ << endl;
         mGravityVec = gw.clone();
+        cout << "gray vity vec is " << mGravityVec << endl;
+        
         Vector3d gweig = Converter::toVector3d(gw);
         mRwiInit = Rwi_.clone();
 
@@ -637,7 +649,7 @@ bool LocalMapping::TryInitVIO(void)
                 //pMP->SetWorldPos(pMP->GetWorldPos()*scale);
                 pMP->UpdateScale(scale);
             }
-            std::cout<<std::endl<<"... Map scale updated ..."<<std::endl<<std::endl;
+            std::cout<<std::endl<<"... Map scale updated ... " << scale << std::endl<<std::endl;
 
             // Update NavStates
             if(pNewestKF!=mpCurrentKeyFrame)
@@ -1021,8 +1033,7 @@ void LocalMapping::Run()
         if(CheckFinish())
             break;
 
-        // usleep(3000);
-        usleep(2000);
+         usleep(1000);
     }
 
     SetFinish();
@@ -1109,7 +1120,7 @@ void LocalMapping::MapPointCulling()
         {
             lit = mlpRecentAddedMapPoints.erase(lit);
         }
-        else if(pMP->GetFoundRatio()<0.25f )
+        else if(pMP->GetFoundRatio() < 0.15f) //0.25f )
         {
             pMP->SetBadFlag();
             lit = mlpRecentAddedMapPoints.erase(lit);
@@ -1129,9 +1140,9 @@ void LocalMapping::MapPointCulling()
 void LocalMapping::CreateNewMapPoints()
 {
     // Retrieve neighbor keyframes in covisibility graph
-    int nn = 10;
-    if(mbMonocular)
-        nn=20;
+    int nn = MONOCULAR_INT;
+    // if(mbMonocular)
+    //     nn=15;
     const vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
 
     ORBmatcher matcher(0.6,false);
@@ -1376,9 +1387,9 @@ void LocalMapping::CreateNewMapPoints()
 void LocalMapping::SearchInNeighbors()
 {
     // Retrieve neighbor keyframes
-    int nn = 10;
+    int nn = MONOCULAR_INT;
     // if(mbMonocular)
-    //     nn=20;
+    //     nn=15;
     const vector<KeyFrame*> vpNeighKFs = mpCurrentKeyFrame->GetBestCovisibilityKeyFrames(nn);
     vector<KeyFrame*> vpTargetKFs;
     for(vector<KeyFrame*>::const_iterator vit=vpNeighKFs.begin(), vend=vpNeighKFs.end(); vit!=vend; vit++)
@@ -1554,6 +1565,7 @@ void LocalMapping::InterruptBA()
 void LocalMapping::KeyFrameCulling()
 {
 
+    return;
     if(ConfigParam::GetRealTimeFlag())
     {
         if(GetFlagCopyInitKFs())

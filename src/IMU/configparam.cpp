@@ -9,11 +9,18 @@ cv::Mat ConfigParam::_MatTbc = cv::Mat::eye(4,4,CV_32F);
 Eigen::Matrix4d ConfigParam::_EigTcb = Eigen::Matrix4d::Identity();
 cv::Mat ConfigParam::_MatTcb = cv::Mat::eye(4,4,CV_32F);
 int ConfigParam::_LocalWindowSize = 10;
+int ConfigParam::_BeginNo = 0;
 double ConfigParam::_ImageDelayToIMU = 0;
 bool ConfigParam::_bAccMultiply9p8 = false;
 std::string ConfigParam::_tmpFilePath = "";
 double ConfigParam::_nVINSInitTime = 15;
 bool ConfigParam::_bRealTime = true;
+
+
+std::string ConfigParam::_VocPath;
+std::string ConfigParam::_PstPath;
+std::string ConfigParam::_ImgPath;
+std::string ConfigParam::_ImuPath;
 
 ConfigParam::ConfigParam(const std::string &configfile)
 {
@@ -23,18 +30,21 @@ ConfigParam::ConfigParam(const std::string &configfile)
     std::cout << "config path is " << configfile.c_str() << std::endl;
     _testDiscardTime = fSettings["IMU.DiscardTime"];
     _nVINSInitTime = fSettings["IMU.VINSInitTime"];
+    _BeginNo = fSettings["Sys.BeginNo"];
     std::cout<<"VINS initialize time: "<<_nVINSInitTime<<std::endl;
     std::cout<<"Discart time in test data: "<<_testDiscardTime<<std::endl;
 
-    // fSettings["IMU.InitVIOTmpPath"] >> _tmpFilePath;
-    // std::cout<<"save tmp file in "<<_tmpFilePath<<std::endl;
+    fSettings["Sys.ImgPath"] >> _ImgPath;
+    std::cout << "img path : " << _ImgPath.c_str() << std::endl;
 
-    // fSettings["bagfile"] >> _bagfile;
-    // std::cout<<"open rosbag: "<<_bagfile<<std::endl;
-    // fSettings["imutopic"] >> _imuTopic;
-    // fSettings["imagetopic"] >> _imageTopic;
-    // std::cout<<"imu topic: "<<_imuTopic<<std::endl;
-    // std::cout<<"image topic: "<<_imageTopic<<std::endl;
+    fSettings["Sys.PstPath"] >> _PstPath;
+    std::cout << "pst path : " << _PstPath.c_str() << std::endl;
+
+    fSettings["Sys.ImuPath"] >> _ImuPath;
+    std::cout << "imu path : " << _ImuPath.c_str() << std::endl;
+    
+    fSettings["Sys.VocPath"] >> _VocPath;
+    std::cout << "voc path : " << _VocPath.c_str() << std::endl;
 
     _LocalWindowSize = fSettings["LocalMapping.LocalWindowSize"];
     std::cout<<"local window size: "<<_LocalWindowSize<<std::endl;

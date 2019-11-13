@@ -342,6 +342,7 @@ void Optimizer::LocalBAPRVIDP(KeyFrame *pCurKF, const std::list<KeyFrame*> &lLoc
         if(dc < 0.01)
         {
             std::cerr<<"depth < 0.01, = "<<dc<<std::endl;
+            std::cerr << "pos" << Pw << std::endl;
             dc = 0.01;
             continue;
         }
@@ -2947,7 +2948,7 @@ Vector3d Optimizer::OptimizeInitialGyroBias(const vector<cv::Mat>& vTwc, const v
     g2o::BlockSolverX * solver_ptr = new g2o::BlockSolverX(linearSolver);
 
     g2o::OptimizationAlgorithmGaussNewton* solver = new g2o::OptimizationAlgorithmGaussNewton(solver_ptr);
-    //g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+    // g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
     optimizer.setAlgorithm(solver);
 
     // Add vertex of gyro bias, to optimizer graph
@@ -3546,8 +3547,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     g2o::SparseOptimizer optimizer;
     g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
 
-    linearSolver = new g2o::LinearSolverDense<g2o::BlockSolver_6_3::PoseMatrixType>();
-    // linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
+    // linearSolver = new g2o::LinearSolverDense<g2o::BlockSolver_6_3::PoseMatrixType>();
+    linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
 
     g2o::BlockSolver_6_3 * solver_ptr = new g2o::BlockSolver_6_3(linearSolver);
 
@@ -3678,6 +3679,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     const int its[4]={10,10,10,10};    
 
     int nBad=0;
+    cout << "op size : " << optimizer.vertices().size();
     for(size_t it=0; it<4; it++)
     {
 

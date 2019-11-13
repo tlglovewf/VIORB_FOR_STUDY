@@ -101,6 +101,8 @@ bool M_DataManager::LoadData(const string &pstpath, const string &imupath)
         try
         {
             cout << "开始加载文件数据" << endl;
+            cout << pstpath.c_str() << endl;
+            cout << imupath.c_str() << endl;
             pstfile.open(pstpath);
             imufile.open(imupath);
 

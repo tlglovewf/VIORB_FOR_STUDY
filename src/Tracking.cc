@@ -245,18 +245,14 @@ bool Tracking::TrackLocalMapWithIMU(bool bMapUpdated)
         if(mCurrentFrame.GetNavState().Get_dBias_Gyr().norm() > 1e-6) cerr<<"TrackLocalMapWithIMU current Frame dBias gyr not zero"<<endl;
 
         //
-        cout << "optimize bg1." << endl;
         Optimizer::PoseOptimization(&mCurrentFrame,mpLastKeyFrame,imupreint,mpLocalMapper->GetGravityVec(),true);
-        cout << "optimize ed1." << endl;
     }
     // Map not updated, optimize with last Frame
     else
     {
         // Get initial pose from Last Frame
         IMUPreintegrator imupreint = GetIMUPreIntSinceLastFrame(&mCurrentFrame, &mLastFrame);
-        cout << "optimize bg2." << endl;
         Optimizer::PoseOptimization(&mCurrentFrame,&mLastFrame,imupreint,mpLocalMapper->GetGravityVec(),true);
-        cout << "optimize ed2." << endl;
     }
 
     mnMatchesInliers = 0;
@@ -282,13 +278,12 @@ bool Tracking::TrackLocalMapWithIMU(bool bMapUpdated)
 
         }
     }
-        cout << "over" << endl;
     // Decide if the tracking was succesful
     // More restrictive if there was a relocalization recently
-    if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50)
+    if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers < 40)// 50)
         return false;
 
-    if(mnMatchesInliers<6/*30*/)
+    if(mnMatchesInliers< 10 /*30*/)
         return false;
     else
         return true;
@@ -302,7 +297,6 @@ void Tracking::PredictNavStateByIMU(bool bMapUpdated)
     if(mpLocalMapper->GetFirstVINSInited() || bMapUpdated)
     {
         //if(mpLocalMapper->GetFirstVINSInited() && !bMapUpdated) cerr<<"2-FirstVinsInit, but not bMapUpdated. shouldn't"<<endl;
-
         // Compute IMU Pre-integration
         mIMUPreIntInTrack = GetIMUPreIntSinceLastKF(&mCurrentFrame, mpLastKeyFrame, mvIMUSinceLastKF);
 
@@ -338,7 +332,8 @@ bool Tracking::TrackWithIMU(bool bMapUpdated)
     ORBmatcher matcher(0.9,true);
 
     // VINS has been inited in this function
-    if(!mpLocalMapper->GetVINSInited()) cerr<<"local mapping VINS not inited. why call TrackWithIMU?"<<endl;
+    if(!mpLocalMapper->GetVINSInited())
+        cerr << "local mapping VINS not inited. why call TrackWithIMU?"<<endl;
 
     // Predict NavState&Pose by IMU
     // And compute the IMU pre-integration for PoseOptimization
@@ -349,7 +344,7 @@ bool Tracking::TrackWithIMU(bool bMapUpdated)
     // Project points seen in previous frame
     int th;
     if(mSensor!=System::STEREO)
-        th=15;
+        th=150;
     else
         th=7;
     int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR);
@@ -358,11 +353,15 @@ bool Tracking::TrackWithIMU(bool bMapUpdated)
     if(nmatches<20)
     {
         fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
-        nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,2*th,mSensor==System::MONOCULAR);
+        nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,3 * th,mSensor==System::MONOCULAR);
     }
 
     if(nmatches</*20*/10)
+    {
+        cout << "track imu number is " << nmatches << endl;
         return false;
+    }
+        
 
 
     // Pose optimization. false: no need to compute marginalized for current Frame
@@ -396,6 +395,7 @@ bool Tracking::TrackWithIMU(bool bMapUpdated)
                 nmatchesMap++;
         }
     }
+
 
     if(mbOnlyTracking)
     {
@@ -834,7 +834,7 @@ void Tracking::Track()
             cerr<<"Localization mode not supported yet"<<endl;
         }
         mCurrentFrame.mpReferenceKF = mpReferenceKF;
-
+        cout << "set frame " << bOK << endl;
         // If we have an initial estimation of the camera pose and matching. Track the local map.
         if(!mbOnlyTracking)
         {
@@ -986,8 +986,13 @@ void Tracking::Track()
             if(!mpLocalMapper->GetVINSInited())
             {
                 cout << "Track lost soon after initialisation, reseting..." << endl;
-                mpSystem->Reset();
+                // mpSystem->Reset();
                 return;
+            }
+            else
+            {
+                // mpSystem->Reset();
+                cout << "lost" << endl;
             }
         }
 
@@ -1129,7 +1134,6 @@ void Tracking::MonocularInitialization()
 
         if(mpInitializer->Initialize(mCurrentFrame, mvIniMatches, Rcw, tcw, mvIniP3D, vbTriangulated))
         {
-            cout << " init count : " << nmatches << endl;
             for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
             {
                 if(mvIniMatches[i]>=0 && !vbTriangulated[i])
@@ -1172,6 +1176,8 @@ void Tracking::CreateInitialMapMonocular()
 
     // Create KeyFrames
     KeyFrame* pKFini = new KeyFrame(mInitialFrame,mpMap,mpKeyFrameDB,vimu1,NULL);
+    // Eigen::Vector3d vel(0,19.634651220703088,0);
+    // pKFini->SetIMUPreInitParam(vel);
     pKFini->ComputePreInt();
     KeyFrame* pKFcur = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB,vimu2,pKFini);
     pKFcur->ComputePreInt();
@@ -1293,6 +1299,7 @@ void Tracking::CheckReplacedInLastFrame()
 
 bool Tracking::TrackReferenceKeyFrame()
 {
+    cout << "track reference key frame bg." << endl;
     // Compute Bag of Words vector
     mCurrentFrame.ComputeBoW();
 
@@ -1332,7 +1339,7 @@ bool Tracking::TrackReferenceKeyFrame()
                 nmatchesMap++;
         }
     }
-
+    cout << "track reference key frame ed. " << nmatchesMap << endl;
     return nmatchesMap>=10;
 }
 
@@ -1417,7 +1424,7 @@ bool Tracking::TrackWithMotionModel()
     // Project points seen in previous frame
     int th;
     if(mSensor!=System::STEREO)
-        th = 100;
+        th = 150;
     else
         th=7;
     int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR);
@@ -1426,7 +1433,7 @@ bool Tracking::TrackWithMotionModel()
     if(nmatches<20)
     {
         fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
-        nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,2*th,mSensor==System::MONOCULAR);
+        nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,4*th,mSensor==System::MONOCULAR);
     }
 
     if(nmatches<20)

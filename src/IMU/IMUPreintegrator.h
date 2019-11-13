@@ -35,6 +35,13 @@ public:
     {
         return _delta_P;
     }
+    
+    // set initial velocity
+    inline void setInitV(const Eigen::Vector3d &v)
+    {
+        _delta_V = v;
+    }
+
         inline Eigen::Vector3d getDeltaV() const    // V_k+1 = V_k + R_k*a_k*dt
     {
         return _delta_V;
@@ -176,6 +183,8 @@ public:
         Quaterniond qr(R);
         return normalizeRotationQ(qr).toRotationMatrix();
     }
+
+    
 private:
     /*
      * NOTE:

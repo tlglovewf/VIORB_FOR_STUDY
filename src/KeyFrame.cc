@@ -184,6 +184,11 @@ void KeyFrame::SetNavStateDeltaBa(const Vector3d &dba)
     mNavState.Set_DeltaBiasAcc(dba);
 }
 
+void KeyFrame::SetIMUPreInitParam( const Eigen::Vector3d vel)
+{
+    mIMUPreInt.setInitV(vel);
+}
+
 const IMUPreintegrator & KeyFrame::GetIMUPreInt(void)
 {
     unique_lock<mutex> lock(mMutexIMUData);

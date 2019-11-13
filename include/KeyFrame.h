@@ -57,6 +57,7 @@ public:
     void AppendIMUDataToFront(KeyFrame* pPrevKF);
     void ComputePreInt(void);
 
+    void SetIMUPreInitParam( const Eigen::Vector3d vel);
     const IMUPreintegrator & GetIMUPreInt(void);
 
     void UpdateNavStatePVRFromTcw(const cv::Mat &Tcw,const cv::Mat &Tbc);

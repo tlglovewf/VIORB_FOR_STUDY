@@ -47,7 +47,7 @@ void Map::UpdateScale(const double &scale)
         //pMP->SetWorldPos(pMP->GetWorldPos()*scale);
         pMP->UpdateScale(scale);
     }
-    std::cout<<std::endl<<"... Map scale updated ..."<<std::endl<<std::endl;
+    std::cout<<std::endl<<"... Map scale updated ... "<< scale << std::endl<<std::endl;
 }
 
 //---------------------------------------

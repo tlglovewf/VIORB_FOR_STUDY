@@ -26,12 +26,15 @@ public:
 
     static double GetG(){return _g;}
 
-    std::string _bagfile;
-    std::string _imageTopic;
-    std::string _imuTopic;
+    static std::string _VocPath;
+    static std::string _PstPath;
+    static std::string _ImgPath;
+    static std::string _ImuPath;
 
     static std::string getTmpFilePath();
     static std::string _tmpFilePath;
+
+     static int _BeginNo;
 
     static double GetVINSInitTime(){return _nVINSInitTime;}
     static bool GetRealTimeFlag() {return _bRealTime;}
