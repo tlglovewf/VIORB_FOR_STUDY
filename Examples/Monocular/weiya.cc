@@ -54,7 +54,6 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(vocpath,cfgpath,ORB_SLAM2::System::MONOCULAR,true);
@@ -138,7 +137,7 @@ int main(int argc, char **argv)
         else if(index > 0)
             T = tframe - (it - 1)->second._t;
         ++index;
-        //  cout << "++++++++++++++++++++++++ : " << (T - ttrack) << endl;
+
          if(ttrack<T)
          {
              double ddx = T - ttrack;

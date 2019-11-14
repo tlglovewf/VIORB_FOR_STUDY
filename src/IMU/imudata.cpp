@@ -20,12 +20,13 @@ namespace ORB_SLAM2
  * sigma_aw: 3.0e-3         m / s^3 / sqrt(Hz)
  */
 
+// get data from imu error model values ?
 // *1e3/*1e2 chosen by experiments
 double IMUData::_gyrBiasRw2 =  2.5e-2 * 2.5e-2;  //2.0e-5*2.0e-5/**10*/;  //2e-12*1e3
 double IMUData::_accBiasRw2 =  3.0e-2 * 3.0e-2; //5.0e-3*5.0e-3/**10*/;  //4.5e-8*1e2
 
-Matrix3d IMUData::_gyrMeasCov = Matrix3d::Identity()*1.7e-4*1.7e-4/0.005/**100*/;       // sigma_g * sigma_g / dt, ~6e-6*10
-Matrix3d IMUData::_accMeasCov = Matrix3d::Identity()*2.0e-3*2.0e-3/0.005*100;       // sigma_a * sigma_a / dt, ~8e-4*10
+Matrix3d IMUData::_gyrMeasCov = Matrix3d::Identity() * 9.24639e-8; //1.7e-4*1.7e-4/0.005/**100*/;       // sigma_g * sigma_g / dt, ~6e-6*10
+Matrix3d IMUData::_accMeasCov = Matrix3d::Identity() * 8.1e-9;// 2.0e-3*2.0e-3/0.005*100;       // sigma_a * sigma_a / dt, ~8e-4*10
 
 // covariance of bias random walk
 Matrix3d IMUData::_gyrBiasRWCov = Matrix3d::Identity()*_gyrBiasRw2;     // sigma_gw * sigma_gw * dt, ~2e-12

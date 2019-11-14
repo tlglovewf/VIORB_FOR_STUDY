@@ -283,7 +283,7 @@ bool Tracking::TrackLocalMapWithIMU(bool bMapUpdated)
     if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers < 40)// 50)
         return false;
 
-    if(mnMatchesInliers< 10 /*30*/)
+    if(mnMatchesInliers < 10)// 6 /*30*/)
         return false;
     else
         return true;
@@ -353,7 +353,7 @@ bool Tracking::TrackWithIMU(bool bMapUpdated)
     if(nmatches<20)
     {
         fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
-        nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,3 * th,mSensor==System::MONOCULAR);
+        nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,4 * th,mSensor==System::MONOCULAR);
     }
 
     if(nmatches</*20*/10)
@@ -1424,7 +1424,7 @@ bool Tracking::TrackWithMotionModel()
     // Project points seen in previous frame
     int th;
     if(mSensor!=System::STEREO)
-        th = 150;
+        th = 100;
     else
         th=7;
     int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR);
@@ -1433,7 +1433,7 @@ bool Tracking::TrackWithMotionModel()
     if(nmatches<20)
     {
         fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
-        nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,4*th,mSensor==System::MONOCULAR);
+        nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,2 * th,mSensor==System::MONOCULAR);
     }
 
     if(nmatches<20)

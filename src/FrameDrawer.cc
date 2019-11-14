@@ -93,8 +93,8 @@ cv::Mat FrameDrawer::DrawFrame()
     {
         mnTracked=0;
         mnTrackedVO=0;
-        const float r = 12;
-        const int sz = 6;
+        const float r = 16;
+        const int sz = 10;
         for(int i=0;i<N;i++)
         {
             if(vbVO[i] || vbMap[i])

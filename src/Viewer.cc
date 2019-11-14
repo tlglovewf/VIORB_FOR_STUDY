@@ -55,7 +55,7 @@ void Viewer::Run()
 {
     mbFinished = false;
 
-    pangolin::CreateWindowAndBind("ORB-SLAM2: Map Viewer",1024,768);
+    pangolin::CreateWindowAndBind("Coremap SmarterEye: Map Viewer",1024,768);
 
     // 3D Mouse handler requires depth testing to be enabled
     glEnable(GL_DEPTH_TEST);
@@ -64,17 +64,17 @@ void Viewer::Run()
     glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
-    pangolin::Var<bool> menuFollowCamera("menu.Follow Camera",true,true);
-    pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
-    pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
-    pangolin::Var<bool> menuShowGraph("menu.Show Graph",true,true);
-    pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
+    pangolin::CreatePanel("menu").SetBounds(1.0,0.0,0.0,pangolin::Attach::Pix(175));
+    pangolin::Var<bool> menuFollowCamera("menu.跟踪相机",true,true);
+    pangolin::Var<bool> menuShowPoints("menu.显示路标点",true,true);
+    pangolin::Var<bool> menuShowKeyFrames("menu.显示关键帧",true,true);
+    pangolin::Var<bool> menuShowGraph("menu.显示轨迹",true,true);
+    // pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
     pangolin::Var<bool> menuReset("menu.Reset",false,false);
 
     // Define Camera Render Object (for view / scene browsing)
     pangolin::OpenGlRenderState s_cam(
-                pangolin::ProjectionMatrix(1024,768,mViewpointF,mViewpointF,512,389,0.1,1000),
+                pangolin::ProjectionMatrix(800,600,mViewpointF,mViewpointF,400,300,0.1,1000),
                 pangolin::ModelViewLookAt(mViewpointX,mViewpointY,mViewpointZ, 0,0,0,0.0,-1.0, 0.0)
                 );
 
@@ -86,7 +86,7 @@ void Viewer::Run()
     pangolin::OpenGlMatrix Twc;
     Twc.SetIdentity();
 
-    cv::namedWindow("ORB-SLAM2: Current Frame");
+    cv::namedWindow("Coremap-SmarterEye: Current Frame");
 
     bool bFollow = true;
     bool bLocalizationMode = false;
@@ -112,16 +112,16 @@ void Viewer::Run()
             bFollow = false;
         }
 
-        if(menuLocalizationMode && !bLocalizationMode)
-        {
-            mpSystem->ActivateLocalizationMode();
-            bLocalizationMode = true;
-        }
-        else if(!menuLocalizationMode && bLocalizationMode)
-        {
-            mpSystem->DeactivateLocalizationMode();
-            bLocalizationMode = false;
-        }
+        // if(menuLocalizationMode && !bLocalizationMode)
+        // {
+        //     mpSystem->ActivateLocalizationMode();
+        //     bLocalizationMode = true;
+        // }
+        // else if(!menuLocalizationMode && bLocalizationMode)
+        // {
+        //     mpSystem->DeactivateLocalizationMode();
+        //     bLocalizationMode = false;
+        // }
 
         d_cam.Activate(s_cam);
         glClearColor(1.0f,1.0f,1.0f,1.0f);
@@ -135,9 +135,9 @@ void Viewer::Run()
 
         cv::Mat im = mpFrameDrawer->DrawFrame();
 
-        cv::resize(im,im,cv::Size(im.cols >> 2, im.rows >> 2));
+        cv::resize(im,im,cv::Size(800,600));
 
-        cv::imshow("ORB-SLAM2: Current Frame",im);
+        cv::imshow("Coremap-SmarterEye: Current Frame",im);
         cv::waitKey(mT);
 
         if(menuReset)
@@ -145,7 +145,7 @@ void Viewer::Run()
             menuShowGraph = true;
             menuShowKeyFrames = true;
             menuShowPoints = true;
-            menuLocalizationMode = false;
+            // menuLocalizationMode = false;
             if(bLocalizationMode)
                 mpSystem->DeactivateLocalizationMode();
             bLocalizationMode = false;

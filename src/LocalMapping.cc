@@ -1033,7 +1033,7 @@ void LocalMapping::Run()
         if(CheckFinish())
             break;
 
-         usleep(1000);
+        //  usleep(1000);
     }
 
     SetFinish();
