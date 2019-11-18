@@ -982,9 +982,7 @@ void LocalMapping::Run()
                     else
                     {
                         //Optimizer::LocalBundleAdjustmentNavStatePRV(mpCurrentKeyFrame,mlLocalKeyFrames,&mbAbortBA, mpMap, mGravityVec, this);
-                        cout << "begin local ba " << endl;
                         Optimizer::LocalBAPRVIDP(mpCurrentKeyFrame,mlLocalKeyFrames,&mbAbortBA, mpMap, mGravityVec, this);
-                        cout << "end local ba " << endl;
                     }
                 }
 
@@ -1011,8 +1009,8 @@ void LocalMapping::Run()
                 KeyFrameCulling();
             }
 
-            if(GetFlagInitGBAFinish())
-                mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
+            //if(GetFlagInitGBAFinish())
+            //    mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
         }
         else if(Stop())
         {

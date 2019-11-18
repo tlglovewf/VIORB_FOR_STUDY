@@ -144,7 +144,7 @@ int main(int argc, char **argv)
             
              usleep(ddx * 1e3);
          }
-         usleep(1e6);
+         usleep(2.0e6);
     }
 
     // Stop all threads

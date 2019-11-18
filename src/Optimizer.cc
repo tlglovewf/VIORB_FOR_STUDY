@@ -3547,8 +3547,8 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     g2o::SparseOptimizer optimizer;
     g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
 
-    linearSolver = new g2o::LinearSolverDense<g2o::BlockSolver_6_3::PoseMatrixType>();
-    // linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
+    // linearSolver = new g2o::LinearSolverDense<g2o::BlockSolver_6_3::PoseMatrixType>();
+    linearSolver = new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
 
     g2o::BlockSolver_6_3 * solver_ptr = new g2o::BlockSolver_6_3(linearSolver);
 
@@ -3679,7 +3679,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
     const int its[4]={10,10,10,10};    
 
     int nBad=0;
-    cout << "op size : " << optimizer.vertices().size();
+
     for(size_t it=0; it<4; it++)
     {
 

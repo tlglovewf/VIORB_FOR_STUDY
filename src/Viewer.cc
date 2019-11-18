@@ -65,22 +65,24 @@ void Viewer::Run()
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     pangolin::CreatePanel("menu").SetBounds(1.0,0.0,0.0,pangolin::Attach::Pix(175));
-    pangolin::Var<bool> menuFollowCamera("menu.跟踪相机",true,true);
-    pangolin::Var<bool> menuShowPoints("menu.显示路标点",true,true);
-    pangolin::Var<bool> menuShowKeyFrames("menu.显示关键帧",true,true);
-    pangolin::Var<bool> menuShowGraph("menu.显示轨迹",true,true);
+    pangolin::Var<bool> menuFollowCamera("menu.Follow Camera",true,true);
+    pangolin::Var<bool> menuShowPoints("menu.Show MapPoints",true,true);
+    pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
+    pangolin::Var<bool> menuShowGraph("menu.Show Trace",true,true);
     // pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
     pangolin::Var<bool> menuReset("menu.Reset",false,false);
 
     // Define Camera Render Object (for view / scene browsing)
+    const int _w = 800;
+    const int _h = 600;
     pangolin::OpenGlRenderState s_cam(
-                pangolin::ProjectionMatrix(800,600,mViewpointF,mViewpointF,400,300,0.1,1000),
+                pangolin::ProjectionMatrix(_w,_h,mViewpointF,mViewpointF,_w >> 1, _h >> 1,0.1,1000),
                 pangolin::ModelViewLookAt(mViewpointX,mViewpointY,mViewpointZ, 0,0,0,0.0,-1.0, 0.0)
                 );
 
     // Add named OpenGL viewport to window and provide 3D Handler
     pangolin::View& d_cam = pangolin::CreateDisplay()
-            .SetBounds(0.0, 1.0, pangolin::Attach::Pix(175), 1.0, -1024.0f/768.0f)
+            .SetBounds(0.0, 1.0, pangolin::Attach::Pix(175), 1.0, -static_cast<float>(_w) / _h)
             .SetHandler(new pangolin::Handler3D(s_cam));
 
     pangolin::OpenGlMatrix Twc;

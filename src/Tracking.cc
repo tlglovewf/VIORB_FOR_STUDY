@@ -280,10 +280,10 @@ bool Tracking::TrackLocalMapWithIMU(bool bMapUpdated)
     }
     // Decide if the tracking was succesful
     // More restrictive if there was a relocalization recently
-    if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers < 40)// 50)
+    if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers <  50)
         return false;
 
-    if(mnMatchesInliers < 10)// 6 /*30*/)
+    if(mnMatchesInliers < 6 /*30*/)
         return false;
     else
         return true;
@@ -358,7 +358,7 @@ bool Tracking::TrackWithIMU(bool bMapUpdated)
 
     if(nmatches</*20*/10)
     {
-        cout << "track imu number is " << nmatches << endl;
+        cout << "lost track imu : " << nmatches << endl;
         return false;
     }
         
@@ -993,6 +993,7 @@ void Tracking::Track()
             {
                 // mpSystem->Reset();
                 cout << "lost" << endl;
+                exit(0);
             }
         }
 

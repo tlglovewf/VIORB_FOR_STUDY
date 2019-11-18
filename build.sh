@@ -31,6 +31,8 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j
 cd ..
 
+./Examples/Monocular/weiya
+
 #echo "Build ROS node ..."
 
 #cd Examples/ROS/ORB_VIO
