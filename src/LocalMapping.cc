@@ -298,10 +298,7 @@ bool LocalMapping::TryInitVIO(void)
         KeyFrameInit* pKF3 = vKFInit[i+2];
         // Delta time between frames
         double dt12 = pKF2->mIMUPreInt.getDeltaTime();
-        cout << "dt12 " << dt12 << " " << pKF2->mIMUPreInt.getDeltaP() << endl;
-        cout << "dt vel " << pKF2->mIMUPreInt.getDeltaV() << endl;
         double dt23 = pKF3->mIMUPreInt.getDeltaTime();
-        cout << "dt23 " << dt23 << " " << pKF3->mIMUPreInt.getDeltaP() << endl; 
 
         // Pre-integrated measurements
         cv::Mat dp12 = Converter::toCvMat(pKF2->mIMUPreInt.getDeltaP());
@@ -534,16 +531,25 @@ bool LocalMapping::TryInitVIO(void)
 
     if(bVIOInited)
     {
+        cout << "calc scale : " << s_ << endl;
         // Set NavState , scale and bias for all KeyFrames
         // Scale
-       s_ = fmax(0.95,s_);
+        s_ = fmin(fmax(0.99,s_),1.01);
         double scale =  s_;
         mnVINSInitScale =  s_;
         // gravity vector in world frame
         cv::Mat gw = Rwi_*GI;
         cout << "scale " << s_ << endl;
         mGravityVec = gw.clone();
-        cout << "gray vity vec is " << mGravityVec << endl;
+        cout << "gray before trans " << GI << endl;
+        cout << "gray after  trans " << mGravityVec << endl;
+        //检查重力方向y轴值 小于阈值 则判定初始化失败 重新初始化
+        const double g_i = mGravityVec.at<float>(1); 
+        if(g_i < 9.0)
+        {
+            cout << "gravity vec compute error! retry! " << endl;
+            return false;
+        }
         
         Vector3d gweig = Converter::toVector3d(gw);
         mRwiInit = Rwi_.clone();
@@ -1009,7 +1015,7 @@ void LocalMapping::Run()
                 KeyFrameCulling();
             }
 
-            //if(GetFlagInitGBAFinish())
+            // if(GetFlagInitGBAFinish())
             //    mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
         }
         else if(Stop())

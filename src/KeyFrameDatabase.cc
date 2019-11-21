@@ -33,6 +33,7 @@ namespace ORB_SLAM2
 KeyFrameDatabase::KeyFrameDatabase (const ORBVocabulary &voc):
     mpVoc(&voc)
 {
+    cout << "+++++++++++++++ VOC SIZE : +++++++++++++++" << voc.size() << endl;
     mvInvertedFile.resize(voc.size());
 }
 
@@ -232,7 +233,8 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
             maxCommonWords=(*lit)->mnRelocWords;
     }
 
-    int minCommonWords = maxCommonWords*0.8f;
+    // int minCommonWords = maxCommonWords*0.8f;
+    int minCommonWords = maxCommonWords * 0.7f;
 
     list<pair<float,KeyFrame*> > lScoreAndMatch;
 

@@ -3,7 +3,7 @@
 
 #System setting
 #img start no
-Sys.BeginNo:  1370 #955 # 300;
+Sys.BeginNo:  0 #2450  #1399 #955 #1320 #955 # 300;
 #img abs path 
 Sys.ImgPath: "/media/navinfo/Bak/Datas/@@1002-0001-191107-00/Output/gray/"
 #pst file abs path

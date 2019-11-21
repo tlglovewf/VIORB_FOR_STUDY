@@ -34,11 +34,54 @@
 #include "IMU/imudata.h"
 #include "IMU/configparam.h"
 
+#include <set>
 using namespace std;
+
+
+typedef std::map<int, double>  VecSet;
+
+/*
+ * 读取dmr文件
+ */
+VecSet ReadDmrFile(const std::string &filepath)
+{
+    if(!filepath.empty())
+    {
+        ifstream file;
+        file.open(filepath);
+
+        std::string str;
+
+        //read header
+        getline(file,str);
+
+        VecSet vecs;
+        while(!file.eof())
+        {
+            getline(file,str);
+
+            double wkt,vel;
+
+            sscanf(str.c_str(), "%lf %lf", &wkt,&vel);
+
+            int t = M_Untils::Wktime2Daytime(wkt);
+
+            // vecs.insert(std::make_pair(t,vel));
+            vecs [t] = vel;
+        }
+        return vecs;
+    }
+    return VecSet();
+}
 
 int main(int argc, char **argv)
 {
     const string cfgpath = "/media/navinfo/Work/GitHub/LearnVIORB/Examples/Monocular/weiya.yaml";
+
+    const string velfile = "/media/navinfo/Bak/Datas/@@1002-0001-191107-00/RawData/ROVER/dmr.txt";
+
+    VecSet vecs = ReadDmrFile(velfile);
+
     ORB_SLAM2::ConfigParam config(cfgpath);
 
     const string &imgpath = ORB_SLAM2::ConfigParam::_ImgPath;
@@ -99,22 +142,30 @@ int main(int argc, char **argv)
         for( size_t i = 0; i < imudatas.size(); ++i)
         {
             const ImuRawData &rawdata = imudatas[i];
+
+            double v = vecs[static_cast<int>(imudatas[i]._t)];
+
+            if( v < 1e-4)
+                continue;
+
             ORB_SLAM2::IMUData imudata(DEG2RAD(rawdata._gyro_x),
                                        DEG2RAD(rawdata._gyro_y),
                                        DEG2RAD(rawdata._gyro_z),
                                        rawdata._acc_x,
                                        rawdata._acc_y,
                                        rawdata._acc_z,rawdata._t);
+
             vimudata.emplace_back(imudata);
         }
+
         cout.precision(20);
-        cout << "vimudata size " << vimudata.size() << endl;
-        cout << "img data    " << it->second._t << endl;
-        if(!vimudata.empty())
-        {
-            cout << "imu data bg " << vimudata.begin()->_t  << endl;
-            cout << "imu data ed " << vimudata.rbegin()->_t << endl;
-        }
+        cout << " ======== vimudata size ======== " << vimudata.size() << endl;
+        // cout << "img data    " << it->second._t << endl;
+        // if(!vimudata.empty())
+        // {//获取到从上一帧图像时间 到这一帧时间(不包括当前帧) 段内的所有imu数据
+        //     cout << "imu data bg " << vimudata.begin()->_t  << endl;
+        //     cout << "imu data ed " << vimudata.rbegin()->_t << endl;
+        // }
         
         // Pass the image to the SLAM system
         // SLAM.TrackMonocular(im,tframe);
@@ -144,7 +195,9 @@ int main(int argc, char **argv)
             
              usleep(ddx * 1e3);
          }
-         usleep(2.0e6);
+         //设置长时间等待其他线程执行完成
+        //  usleep(1.5e6);
+        usleep(1.5e6);
     }
 
     // Stop all threads

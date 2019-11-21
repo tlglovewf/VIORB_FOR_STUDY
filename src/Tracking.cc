@@ -229,6 +229,9 @@ bool Tracking::TrackLocalMapWithIMU(bool bMapUpdated)
 {
     // We have an estimation of the camera pose and some map points tracked in the frame.
     // We retrieve the local map and try to find matches to points in the local map.
+
+    cout << " track local map with imu bg. " << endl;
+
     UpdateLocalMap();
 
     SearchLocalPoints();
@@ -278,6 +281,8 @@ bool Tracking::TrackLocalMapWithIMU(bool bMapUpdated)
 
         }
     }
+
+    cout << "track local map with imu ed. " << mnMatchesInliers << endl;
     // Decide if the tracking was succesful
     // More restrictive if there was a relocalization recently
     if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers <  50)
@@ -329,7 +334,8 @@ void Tracking::PredictNavStateByIMU(bool bMapUpdated)
 
 bool Tracking::TrackWithIMU(bool bMapUpdated)
 {
-    ORBmatcher matcher(0.9,true);
+    // ORBmatcher matcher(0.9,true);
+    ORBmatcher matcher(0.8,true);
 
     // VINS has been inited in this function
     if(!mpLocalMapper->GetVINSInited())
@@ -738,11 +744,13 @@ void Tracking::Track()
 
     mLastProcessedState=mState;
 
+
     // Get Map Mutex -> Map cannot be changed
     unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
 
     // Different operation, according to whether the map is updated
     bool bMapUpdated = false;
+    bool isVisonTrack = false;
     if(mpLocalMapper->GetMapUpdateFlagForTracking())
     {
         bMapUpdated = true;
@@ -799,7 +807,23 @@ void Tracking::Track()
                     {
                         bOK = TrackWithIMU(bMapUpdated);
                         if(!bOK)
-                            bOK = TrackReferenceKeyFrame();
+                        {
+                            //bOK = TrackReferenceKeyFrame();
+
+                            //imu跟踪失败 进入纯视觉跟踪  
+                            cout << "-----------------------------------------------" << endl;
+                            cout << "----------- track with motion model -----------" << endl;
+                            cout << "-----------------------------------------------" << endl;
+                            
+                            bOK = TrackWithMotionModel();
+                            if(!bOK)
+                            {   
+                                //若纯视觉也失败 则设置当前帧位置为前帧位置
+                                bOK = TrackReferenceKeyFrame();
+                            }
+                            isVisonTrack = true;
+                        }
+                            
 
                     }
                 }
@@ -821,10 +845,17 @@ void Tracking::Track()
             }
             else
             {
+                cout << "begin relocalization ..." << endl;
                 bOK = Relocalization();
                 if(bOK) 
                 {
                     cout << " Relocalization successfully!!!" << endl;
+                }
+                else
+                {
+                    cout << "relocalization failed!!!" << endl;
+                    // pause();
+                    
                 }
             }
         }
@@ -834,7 +865,6 @@ void Tracking::Track()
             cerr<<"Localization mode not supported yet"<<endl;
         }
         mCurrentFrame.mpReferenceKF = mpReferenceKF;
-        cout << "set frame " << bOK << endl;
         // If we have an initial estimation of the camera pose and matching. Track the local map.
         if(!mbOnlyTracking)
         {
@@ -847,7 +877,7 @@ void Tracking::Track()
                     bOK = TrackLocalMap();
                 else
                 {
-                    if(mbRelocBiasPrepare)
+                    if (isVisonTrack || mbRelocBiasPrepare)
                     {
                         // 20 Frames after reloc, track with only vision
                         cout << "bg track local map" << endl;
@@ -856,9 +886,7 @@ void Tracking::Track()
                     }
                     else
                     {
-                        cout << "track local imu motion.bg." << endl;
                         bOK = TrackLocalMapWithIMU(bMapUpdated);
-                        cout << "track local imu motion.ed." << endl;
                     }
                 }
 #endif
@@ -991,9 +1019,9 @@ void Tracking::Track()
             }
             else
             {
-                // mpSystem->Reset();
-                cout << "lost" << endl;
-                exit(0);
+                //mpSystem->Reset();
+                cout << "lost ! relocalization....." << endl;
+                
             }
         }
 
@@ -1307,11 +1335,12 @@ bool Tracking::TrackReferenceKeyFrame()
     // We perform first an ORB matching with the reference keyframe
     // If enough matches are found we setup a PnP solver
     // ORBmatcher matcher(0.7,true);
-    ORBmatcher matcher(0.85, true); 
+    ORBmatcher matcher(0.8, true);
+
     vector<MapPoint*> vpMapPointMatches;
 
     int nmatches = matcher.SearchByBoW(mpReferenceKF,mCurrentFrame,vpMapPointMatches);
-
+    cout << "reference search by bow size : " << nmatches << endl;
     if(nmatches<15)
         return false;
 
@@ -1350,7 +1379,11 @@ void Tracking::UpdateLastFrame()
     KeyFrame* pRef = mLastFrame.mpReferenceKF;
     cv::Mat Tlr = mlRelativeFramePoses.back();
 
+    // cout << "Tlr : " << endl << Tlr << endl;
+    
+    // cout << "ll " << endl << mLastFrame.mTcw << endl;
     mLastFrame.SetPose(Tlr*pRef->GetPose());
+    // cout << "l " << endl << mLastFrame.mTcw << endl;
 
     if(mnLastKeyFrameId==mLastFrame.mnId || mSensor==System::MONOCULAR || !mbOnlyTracking)
         return;
@@ -1416,6 +1449,7 @@ bool Tracking::TrackWithMotionModel()
 
     // Update last frame pose according to its reference keyframe
     // Create "visual odometry" points if in Localization Mode
+
     UpdateLastFrame();
 
     mCurrentFrame.SetPose(mVelocity*mLastFrame.mTcw);
@@ -1425,7 +1459,7 @@ bool Tracking::TrackWithMotionModel()
     // Project points seen in previous frame
     int th;
     if(mSensor!=System::STEREO)
-        th = 100;
+        th = 150;
     else
         th=7;
     int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR);
@@ -1436,7 +1470,7 @@ bool Tracking::TrackWithMotionModel()
         fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
         nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,2 * th,mSensor==System::MONOCULAR);
     }
-
+    cout << "search for projection cnt : " << nmatches << endl;
     if(nmatches<20)
         return false;
 
@@ -1642,8 +1676,6 @@ void Tracking::CreateNewKeyFrame()
     pKF->ComputePreInt();
     // Clear IMUData buffer
     mvIMUSinceLastKF.clear();
-
-
     mpReferenceKF = pKF;
     mCurrentFrame.mpReferenceKF = pKF;
 
@@ -1947,6 +1979,7 @@ bool Tracking::Relocalization()
     // Track Lost: Query KeyFrame Database for keyframe candidates for relocalisation
     vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
 
+    cout << "candidate key frame size : " << vpCandidateKFs.size() << endl;
     if(vpCandidateKFs.empty())
         return false;
 
@@ -1977,6 +2010,7 @@ bool Tracking::Relocalization()
             int nmatches = matcher.SearchByBoW(pKF,mCurrentFrame,vvpMapPointMatches[i]);
             if(nmatches<15)
             {
+                cout << "least bow match " << nmatches << endl;
                 vbDiscarded[i] = true;
                 continue;
             }
@@ -2050,7 +2084,7 @@ bool Tracking::Relocalization()
                 if(nGood<50)
                 {
                     int nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,10,100);
-
+                    cout << "nadditional count : " << nadditional << endl;
                     if(nadditional+nGood>=50)
                     {
                         nGood = Optimizer::PoseOptimization(&mCurrentFrame);
