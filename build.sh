@@ -22,7 +22,7 @@
 #cd Vocabulary
 #tar -xf ORBvoc.txt.tar.gz
 #cd ..
-
+clear
 echo "Configuring and building ORB_SLAM2 ..."
 
 mkdir build

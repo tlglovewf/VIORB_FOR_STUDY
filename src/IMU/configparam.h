@@ -27,9 +27,14 @@ public:
     static double GetG(){return _g;}
 
     static std::string _VocPath;
+    //预处理后pst文件路径
     static std::string _PstPath;
+    //预处理后图片路径
     static std::string _ImgPath;
+    //预处理后imu路径
     static std::string _ImuPath;
+    //里程计路径
+    static std::string _VelPath;
 
     static std::string getTmpFilePath();
     static std::string _tmpFilePath;

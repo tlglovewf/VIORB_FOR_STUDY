@@ -3,17 +3,17 @@
 
 #System setting
 #img start no
-Sys.BeginNo:  1800
+Sys.BeginNo:  1320 #2450  #1399 #955 #1320 #955 # 300;
 #img abs path 
-Sys.ImgPath: "/media/navinfo/Bak/Datas/@@1002-0001-191122-03/gray/"
+Sys.ImgPath: "/media/navinfo/Bak/Datas/@@1002-0001-191107-00/Output/gray/"
 #pst file abs path
-Sys.PstPath: "/media/navinfo/Bak/Datas/@@1002-0001-191122-03/gray/pst.txt"
+Sys.PstPath: "/media/navinfo/Bak/Datas/@@1002-0001-191107-00/Output/gray/pst.txt"
 #imu file abs path
-Sys.ImuPath: "/media/navinfo/Bak/Datas/@@1002-0001-191122-03/gray/imu.txt"
+Sys.ImuPath: "/media/navinfo/Bak/Datas/@@1002-0001-191107-00/Output/gray/imu.txt"
 #voc file abs path
 Sys.VocPath: "/media/navinfo/Work/GitHub/ORB_SLAM2/Vocabulary/ORBvoc.txt"
 #velcity file path
-Sys.VelPath: "/media/navinfo/Bak/Datas/@@1002-0001-191122-03/dmr.txt"
+Sys.VelPath: "/media/navinfo/Bak/Datas/@@1002-0001-191107-00/RawData/ROVER/dmr.txt"
 
 #------------------------------------------
 # Imu Parameters. Adjust them!
@@ -38,9 +38,9 @@ LocalMapping.LocalWindowSize: 12
 
 # camera-imu frame transformation, Pi = Tic * Pc
 Camera.Tbc:
- [ 9.9997695638254791e-01, -6.5911252723575096e-03,1.6259678779657481e-03, -9.6324428571720377e-01 ,
-  -1.6597452745885711e-03,-5.1224518936298204e-03, 9.9998550276102560e-01, -3.4703044260081896e-02 ,
-  -6.5827007770038583e-03, -9.9996515817014431e-01,-5.1332734428329837e-03, 7.3972343182943170e-02 ,
+ [9.9997695638254791e-01, -6.5911252723575096e-03,1.6259678779657481e-03, -9.6324428571720377e-01 ,
+  -1.6597452745885711e-03,-5.1224518936298204e-03,9.9998550276102560e-01, -3.4703044260081896e-02,
+  -6.5827007770038583e-03, -9.9996515817014431e-01, -5.1332734428329837e-03,7.3972343182943170e-02,
   0.0, 0.0, 0.0, 1.0]
 
 

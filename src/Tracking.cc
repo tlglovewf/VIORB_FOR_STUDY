@@ -476,7 +476,7 @@ IMUPreintegrator Tracking::GetIMUPreIntSinceLastFrame(Frame* pCurF, Frame* pLast
 }
 
 
-cv::Mat Tracking::GrabImageMonoVI(const cv::Mat &im, const std::vector<IMUData> &vimu, const double &timestamp)
+cv::Mat Tracking::GrabImageMonoVI(const cv::Mat &im, const std::vector<IMUData> &vimu, const double &timestamp, const cv::Mat &velcity)
 {
     mvIMUSinceLastKF.insert(mvIMUSinceLastKF.end(), vimu.begin(),vimu.end());
     mImGray = im;
@@ -502,6 +502,8 @@ cv::Mat Tracking::GrabImageMonoVI(const cv::Mat &im, const std::vector<IMUData> 
         mCurrentFrame = Frame(mImGray,timestamp,vimu,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,mpLastKeyFrame);
 
     Track();
+
+    mpMapDrawer->InsertGroundTruth(velcity);
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -808,7 +810,7 @@ void Tracking::Track()
                         bOK = TrackWithIMU(bMapUpdated);
                         if(!bOK)
                         {
-                            //bOK = TrackReferenceKeyFrame();
+                            // bOK = TrackReferenceKeyFrame();
 
                             //imu跟踪失败 进入纯视觉跟踪  
                             cout << "-----------------------------------------------" << endl;
@@ -816,12 +818,14 @@ void Tracking::Track()
                             cout << "-----------------------------------------------" << endl;
                             
                             bOK = TrackWithMotionModel();
-                            if(!bOK)
+                            // mpLocalMapper->SetVINSInited(false);
+                            // if(!bOK)
                             {   
                                 //若纯视觉也失败 则设置当前帧位置为前帧位置
-                                bOK = TrackReferenceKeyFrame();
+                                // bOK = TrackReferenceKeyFrame();
+                                // mpLocalMapper->SetVINSInited(false);
                             }
-                            isVisonTrack = true;
+                             isVisonTrack = true;
                         }
                             
 
@@ -880,9 +884,7 @@ void Tracking::Track()
                     if (isVisonTrack || mbRelocBiasPrepare)
                     {
                         // 20 Frames after reloc, track with only vision
-                        cout << "bg track local map" << endl;
                         bOK = TrackLocalMap();
-                        cout << "ed track local map " << bOK << endl;
                     }
                     else
                     {
@@ -1015,6 +1017,7 @@ void Tracking::Track()
             {
                 cout << "Track lost soon after initialisation, reseting..." << endl;
                 // mpSystem->Reset();
+                // pause();
                 return;
             }
             else
@@ -1147,6 +1150,8 @@ void Tracking::MonocularInitialization()
         // Find correspondences
         ORBmatcher matcher(0.9,true);
         int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,500);
+
+        cout << "search for initial size : " << nmatches << endl;
         // int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
         
         // Check if there are enough correspondences
@@ -1171,7 +1176,7 @@ void Tracking::MonocularInitialization()
                     nmatches--;
                 }
             }
-
+            cout << "init size : " << nmatches << endl;
             // Set Frame Poses
             mInitialFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
             cv::Mat Tcw = cv::Mat::eye(4,4,CV_32F);
@@ -1180,9 +1185,8 @@ void Tracking::MonocularInitialization()
             mCurrentFrame.SetPose(Tcw);
 
             {//add by tu
-                // cout << Rcw << endl;
-                // cout << tcw << endl;
                 mVelocity = Tcw;
+                cout << "vel : -------> " << mVelocity << endl;
             }
             
             CreateInitialMapMonocular();
@@ -1205,8 +1209,6 @@ void Tracking::CreateInitialMapMonocular()
 
     // Create KeyFrames
     KeyFrame* pKFini = new KeyFrame(mInitialFrame,mpMap,mpKeyFrameDB,vimu1,NULL);
-    // Eigen::Vector3d vel(0,19.634651220703088,0);
-    // pKFini->SetIMUPreInitParam(vel);
     pKFini->ComputePreInt();
     KeyFrame* pKFcur = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB,vimu2,pKFini);
     pKFcur->ComputePreInt();
@@ -1260,7 +1262,7 @@ void Tracking::CreateInitialMapMonocular()
     // Set median depth to 1
     float medianDepth = pKFini->ComputeSceneMedianDepth(2);
     float invMedianDepth = 1.0f;// 1.0f/medianDepth;
-
+    cout << "medianDepth : " << medianDepth << endl;
     if(medianDepth<0 || pKFcur->TrackedMapPoints(1)<100)
     {
         cout << "Wrong initialization, reseting..." << endl;
@@ -1325,17 +1327,16 @@ void Tracking::CheckReplacedInLastFrame()
     }
 }
 
-
+//运动模型为空 或者 重定位后 与参考帧做匹配,以上一帧位姿为初值BA, 剔除误匹配点
 bool Tracking::TrackReferenceKeyFrame()
 {
-    cout << "track reference key frame bg." << endl;
     // Compute Bag of Words vector
     mCurrentFrame.ComputeBoW();
 
     // We perform first an ORB matching with the reference keyframe
     // If enough matches are found we setup a PnP solver
     // ORBmatcher matcher(0.7,true);
-    ORBmatcher matcher(0.8, true);
+    ORBmatcher matcher(0.9, true);
 
     vector<MapPoint*> vpMapPointMatches;
 
@@ -1369,7 +1370,7 @@ bool Tracking::TrackReferenceKeyFrame()
                 nmatchesMap++;
         }
     }
-    cout << "track reference key frame ed. " << nmatchesMap << endl;
+    cout << "track reference key frame result " << nmatchesMap << endl;
     return nmatchesMap>=10;
 }
 
@@ -1472,6 +1473,13 @@ bool Tracking::TrackWithMotionModel()
     }
     cout << "search for projection cnt : " << nmatches << endl;
     if(nmatches<20)
+    {
+        mCurrentFrame.SetPose(mLastFrame.mTcw);
+        nmatches =  matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR);
+        cout << "track with " << nmatches << endl;
+    }
+
+    if(nmatches < 20)
         return false;
 
     // Optimize frame pose with all matches
@@ -1514,7 +1522,6 @@ bool Tracking::TrackLocalMap()
     // We have an estimation of the camera pose and some map points tracked in the frame.
     // We retrieve the local map and try to find matches to points in the local map.
     
-    
     UpdateLocalMap();
 
     SearchLocalPoints();
@@ -1547,19 +1554,35 @@ bool Tracking::TrackLocalMap()
     }
     // Decide if the tracking was succesful
     // More restrictive if there was a relocalization recently
-    if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50)
-        return false;
 
-    if(mnMatchesInliers<30)
-        return false;
-    else
-        return true;
+    bool bol = false;// (mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames) && (mnMatchesInliers < 50);
+    bool brst = ((mnMatchesInliers<30) || bol) ?false : true;
+
+    // cout << " >>>>>>>> track local map : " << brst << endl;
+
+    return brst;
 }
 
 
 bool Tracking::NeedNewKeyFrame()
 {
-    return true;
+    if(mCurrentFrame.mpReferenceKF)
+    {
+        if(mvIMUSinceLastKF.size() > 500)
+        {
+            cout << "*********can not create new key frame*********" << endl;
+            mvIMUSinceLastKF.clear();
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+    else
+    {
+        return false;
+    }
 
     if(mbOnlyTracking)
         return false;
@@ -1578,6 +1601,7 @@ bool Tracking::NeedNewKeyFrame()
     const int nKFs = mpMap->KeyFramesInMap();
 
     // Do not insert keyframes if not enough frames have passed from last relocalisation
+    // 已有关键帧数量>maxframes时 上次重定位后必须经过了>mmaxframe
     if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && nKFs>mMaxFrames)
         return false;
 
@@ -1589,6 +1613,7 @@ bool Tracking::NeedNewKeyFrame()
     int nMinObs = 3;
     if(nKFs<=2)
         nMinObs=2;
+    //参考关键帧的vpMapPoints中obn大于nMinObs的mappoint数量
     int nRefMatches = mpReferenceKF->TrackedMapPoints(nMinObs);
 
     // Local Mapping accept keyframes?
@@ -1666,7 +1691,12 @@ bool Tracking::NeedNewKeyFrame()
 void Tracking::CreateNewKeyFrame()
 {
     if(!mpLocalMapper->SetNotStop(true))
+    {
+        cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+        cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+        cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
         return;
+    }
 
     //TODO: is it necessary to clear IMU buffers if this is the first KeyFrame after relocalization (also no prevKF)?
     KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB,mvIMUSinceLastKF,mpLastKeyFrame);
@@ -2080,11 +2110,11 @@ bool Tracking::Relocalization()
                     if(mCurrentFrame.mvbOutlier[io])
                         mCurrentFrame.mvpMapPoints[io]=static_cast<MapPoint*>(NULL);
 
+                cout << "+=+=+=    nGood : " << nGood << endl;
                 // If few inliers, search by projection in a coarse window and optimize again
                 if(nGood<50)
                 {
                     int nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,10,100);
-                    cout << "nadditional count : " << nadditional << endl;
                     if(nadditional+nGood>=50)
                     {
                         nGood = Optimizer::PoseOptimization(&mCurrentFrame);

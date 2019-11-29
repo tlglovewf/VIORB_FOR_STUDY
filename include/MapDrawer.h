@@ -41,6 +41,8 @@ public:
     void DrawMapPoints();
     void DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph);
     void DrawCurrentCamera(pangolin::OpenGlMatrix &Twc);
+    void DrawGroundTruth();
+    void InsertGroundTruth(const cv::Mat &velcity);
     void SetCurrentCameraPose(const cv::Mat &Tcw);
     void SetReferenceKeyFrame(KeyFrame *pKF);
     void GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M);
@@ -55,7 +57,8 @@ private:
     float mCameraLineWidth;
 
     cv::Mat mCameraPose;
-
+    cv::Mat mGroundTruth;
+    std::vector< cv::Point3d > mTruths;
     std::mutex mMutexCamera;
 };
 

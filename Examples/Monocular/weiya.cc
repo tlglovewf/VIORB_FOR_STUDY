@@ -33,7 +33,8 @@
 
 #include "IMU/imudata.h"
 #include "IMU/configparam.h"
-
+#include "M_Types.h"
+#include "Converter.h"
 #include <set>
 using namespace std;
 
@@ -78,11 +79,9 @@ int main(int argc, char **argv)
 {
     const string cfgpath = "/media/navinfo/Work/GitHub/LearnVIORB/Examples/Monocular/weiya.yaml";
 
-    const string velfile = "/media/navinfo/Bak/Datas/@@1002-0001-191107-00/RawData/ROVER/dmr.txt";
-
-    VecSet vecs = ReadDmrFile(velfile);
-
     ORB_SLAM2::ConfigParam config(cfgpath);
+
+    VecSet vecs = ReadDmrFile(ORB_SLAM2::ConfigParam::_VelPath);
 
     const string &imgpath = ORB_SLAM2::ConfigParam::_ImgPath;
     const string &pstpath = ORB_SLAM2::ConfigParam::_PstPath;
@@ -106,9 +105,9 @@ int main(int argc, char **argv)
     size_t nImages = M_DataManager::getSingleton()->GetImgSize();
     vTimesTrack.resize(nImages);
 
-    cout << endl << "-------" << endl;
-    cout << "Start processing sequence ..." << endl;
-    cout << "Images in the sequence: " << nImages << endl << endl;
+    std::cout << endl << "-------" << endl;
+    std::cout << "Start processing sequence ..." << endl;
+    std::cout << "Images in the sequence: " << nImages << endl << endl;
 
     // Main loop
     cv::Mat im;
@@ -117,10 +116,11 @@ int main(int argc, char **argv)
     ImgInfoVIter ed = M_DataManager::getSingleton()->end();
     M_DataManager::getSingleton()->setIndicator(st_no);
     int index = 0;
+    PoseData predata = it->second;
     for(; it != ed; ++it)
     {
         //get pic name
-        cout << "pic read " << it->first.c_str() << endl;
+        std::cout << "pic read " << it->first.c_str() << endl;
         // Read image from file
         im = cv::imread(imgpath + it->first,CV_LOAD_IMAGE_UNCHANGED);
         double tframe = it->second._t;
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 
             double v = vecs[static_cast<int>(imudatas[i]._t)];
 
-            if( v < 1e-4)
+            if( v < 5e-2)
                 continue;
 
             ORB_SLAM2::IMUData imudata(DEG2RAD(rawdata._gyro_x),
@@ -169,7 +169,23 @@ int main(int argc, char **argv)
         
         // Pass the image to the SLAM system
         // SLAM.TrackMonocular(im,tframe);
-        SLAM.TrackMonoVI(im,vimudata,tframe);
+
+        cv::Mat velcity = cv::Mat::eye(4,4,CV_64F);
+       
+        if(0 != index)
+        {//根据post 数据 解算帧间R t
+            cv::Mat R;
+            cv::Mat t;
+            cv::Mat cam2imu = ORB_SLAM2::Converter::toCvDMat(ORB_SLAM2::ConfigParam::GetEigTbc());
+            cv::Mat cam2imuR = cam2imu.rowRange(0,3).colRange(0,3);
+            cv::Mat cam2imuT = cam2imu.rowRange(0,3).colRange(3,4);
+            M_Untils::GetRtFromPose(predata,it->second,cam2imuR,cam2imuT, R,t);
+
+            R.copyTo(velcity.rowRange(0,3).colRange(0,3));
+            t.copyTo(velcity.rowRange(0,3).col(3));
+            predata = it->second;
+        }
+        SLAM.TrackMonoVI(im,vimudata,tframe,velcity);
 
 #ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -197,7 +213,7 @@ int main(int argc, char **argv)
          }
          //设置长时间等待其他线程执行完成
         //  usleep(1.5e6);
-        usleep(1.5e6);
+        usleep(5.0e5);
     }
 
     // Stop all threads

@@ -39,6 +39,8 @@ MapDrawer::MapDrawer(Map* pMap, const string &strSettingPath):mpMap(pMap)
     mCameraSize = fSettings["Viewer.CameraSize"];
     mCameraLineWidth = fSettings["Viewer.CameraLineWidth"];
 
+    mGroundTruth = cv::Mat::eye(4,4,CV_64F);
+    mTruths.emplace_back(cv::Point3d(0,0,0));
 }
 
 void MapDrawer::DrawMapPoints()
@@ -245,6 +247,44 @@ void MapDrawer::SetCurrentCameraPose(const cv::Mat &Tcw)
     mCameraPose = Tcw.clone();
 }
 
+void MapDrawer::InsertGroundTruth(const cv::Mat &velcity)
+{
+    mGroundTruth = velcity * mGroundTruth;
+    //  cout << "insert velcity " << velcity << endl;
+    cv::Mat ptmt = -mGroundTruth.rowRange(0,3).colRange(0,3).t()*mGroundTruth.rowRange(0,3).col(3);
+    cv::Point3d pt(ptmt.at<double>(0),ptmt.at<double>(1),ptmt.at<double>(2));
+
+    {
+        cout << "insert " << pt.z << endl;
+        if(!mCameraPose.empty())
+        {
+            cv::Mat Rwc = mCameraPose.rowRange(0,3).colRange(0,3).t();
+            cv::Mat twc = -Rwc*mCameraPose.rowRange(0,3).col(3);
+            cout << "camera " << twc.at<float>(2) << endl;
+        }
+    }
+
+    mTruths.emplace_back(pt);
+}
+void MapDrawer::DrawGroundTruth()
+{
+    glLineWidth(mGraphLineWidth);
+    glColor4f(0.0f, 0.0f, 1.0f, 0.6f);
+    glBegin(GL_LINES);
+    for (size_t i = 1; i < mTruths.size(); i++)
+    {
+        glVertex3f(mTruths[i - 1].x, mTruths[i - 1].y, mTruths[i - 1].z);
+        glVertex3f(mTruths[i].x, mTruths[i].y, mTruths[i].z);
+    }
+    glEnd();
+
+    glPointSize(8);
+    glColor3b(0,255,0);
+    glBegin(GL_POINTS);
+    glVertex3f(mTruths.rbegin()->x,mTruths.rbegin()->y,mTruths.rbegin()->z);
+    glEnd();
+}
+
 void MapDrawer::GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M)
 {
     if(!mCameraPose.empty())
@@ -254,7 +294,7 @@ void MapDrawer::GetCurrentOpenGLCameraMatrix(pangolin::OpenGlMatrix &M)
         {
             unique_lock<mutex> lock(mMutexCamera);
             Rwc = mCameraPose.rowRange(0,3).colRange(0,3).t();
-            twc = -Rwc*mCameraPose.rowRange(0,3).col(3);
+            twc = -Rwc*mCameraPose.rowRange(0,3).col(3);    
         }
 
         M.m[0] = Rwc.at<float>(0,0);

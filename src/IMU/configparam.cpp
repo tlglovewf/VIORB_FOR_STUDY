@@ -21,6 +21,7 @@ std::string ConfigParam::_VocPath;
 std::string ConfigParam::_PstPath;
 std::string ConfigParam::_ImgPath;
 std::string ConfigParam::_ImuPath;
+std::string ConfigParam::_VelPath;
 
 ConfigParam::ConfigParam(const std::string &configfile)
 {
@@ -42,6 +43,9 @@ ConfigParam::ConfigParam(const std::string &configfile)
 
     fSettings["Sys.ImuPath"] >> _ImuPath;
     std::cout << "imu path : " << _ImuPath.c_str() << std::endl;
+
+    fSettings["Sys.VelPath"] >> _VelPath;
+    std::cout << "vel path : " << _VelPath.c_str() << std::endl;
     
     fSettings["Sys.VocPath"] >> _VocPath;
     std::cout << "voc path : " << _VocPath.c_str() << std::endl;

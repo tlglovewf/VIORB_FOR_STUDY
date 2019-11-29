@@ -27,7 +27,7 @@
 #include "Converter.h"
 
 
-const int MONOCULAR_INT = 10;
+const int MONOCULAR_INT = 5;//10;
 
 namespace ORB_SLAM2
 {
@@ -139,6 +139,8 @@ void LocalMapping::SetVINSInited(bool flag)
 {
     unique_lock<mutex> lock(mMutexVINSInitFlag);
     mbVINSInited = flag;
+    if(!flag)
+        mnCount = 0;
 }
 
 bool LocalMapping::GetFirstVINSInited(void)
@@ -191,9 +193,16 @@ void LocalMapping::VINSInitThread()
 #define WRITELOG 0
 bool LocalMapping::TryInitVIO(void)
 {
+     LOGEOUT("+=+=+=+=+=begin tryinit vio=+=+=+=+=+")
+    if(mnCount++ < mnLocalWindowSize)
+    {
+        return false;
+    }
+
     if(mpMap->KeyFramesInMap()<=mnLocalWindowSize)
         return false;
-    LOGEOUT("begin tryinit vio .")
+
+   
     static bool fopened = false;
     static ofstream fgw,fscale,fbiasa,fcondnum,ftime,fbiasg;
     string tmpfilepath = ConfigParam::getTmpFilePath();
@@ -247,6 +256,8 @@ bool LocalMapping::TryInitVIO(void)
 
     // Use all KeyFrames in map to compute
     vector<KeyFrame*> vScaleGravityKF = mpMap->GetAllKeyFrames();
+    // vector<KeyFrame*> vScaleGravityKF(mlLocalKeyFrames.begin(),mlLocalKeyFrames.end());
+
     int N = vScaleGravityKF.size();
     KeyFrame* pNewestKF = vScaleGravityKF[N-1];
     vector<cv::Mat> vTwc;
@@ -534,14 +545,14 @@ bool LocalMapping::TryInitVIO(void)
         cout << "calc scale : " << s_ << endl;
         // Set NavState , scale and bias for all KeyFrames
         // Scale
-        s_ = fmin(fmax(0.99,s_),1.01);
+        if(s_ < 0.9)
+            return false;
+    //    s_ = fmin(fmax(0.99,s_),1.01);
         double scale =  s_;
         mnVINSInitScale =  s_;
         // gravity vector in world frame
         cv::Mat gw = Rwi_*GI;
-        cout << "scale " << s_ << endl;
         mGravityVec = gw.clone();
-        cout << "gray before trans " << GI << endl;
         cout << "gray after  trans " << mGravityVec << endl;
         //检查重力方向y轴值 小于阈值 则判定初始化失败 重新初始化
         const double g_i = mGravityVec.at<float>(1); 
@@ -919,7 +930,7 @@ void LocalMapping::DeleteBadInLocalWindow(void)
 
 LocalMapping::LocalMapping(Map *pMap, const float bMonocular):
     mbMonocular(bMonocular), mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
-    mbAbortBA(false), mbStopped(false), mbStopRequested(false), mbNotStop(false), mbAcceptKeyFrames(true)
+    mbAbortBA(false), mbStopped(false), mbStopRequested(false), mbNotStop(false), mbAcceptKeyFrames(true),mnCount(INT_MAX)
 {
 
     mnLocalWindowSize = ConfigParam::GetLocalWindowSize();
@@ -996,10 +1007,11 @@ void LocalMapping::Run()
                 if(!ConfigParam::GetRealTimeFlag())
                 {
                     // Try to initialize VIO, if not inited
-                    if(!GetVINSInited())
+                    if( !GetVINSInited())
                     {
                         bool tmpbool = TryInitVIO();
-                        SetVINSInited(tmpbool);
+                        // SetVINSInited(tmpbool);
+                        mbVINSInited = tmpbool;
                         if(tmpbool)
                         {
                             // Update map scale
@@ -1059,7 +1071,7 @@ bool LocalMapping::CheckNewKeyFrames()
 
 void LocalMapping::ProcessNewKeyFrame()
 {
-    {
+    {//从队列中取出一帧关键帧,最前面一帧
         unique_lock<mutex> lock(mMutexNewKFs);
         mpCurrentKeyFrame = mlNewKeyFrames.front();
         mlNewKeyFrames.pop_front();
@@ -1124,17 +1136,19 @@ void LocalMapping::MapPointCulling()
         {
             lit = mlpRecentAddedMapPoints.erase(lit);
         }
-        else if(pMP->GetFoundRatio() < 0.15f) //0.25f )
-        {
+        else if(pMP->GetFoundRatio() < 0.25f )
+        {//跟踪到该mapoint的frame数量比预计可观察到该mappoint的frame比例小于25%
             pMP->SetBadFlag();
             lit = mlpRecentAddedMapPoints.erase(lit);
         }
         else if(((int)nCurrentKFid-(int)pMP->mnFirstKFid)>=2 && pMP->Observations()<=cnThObs)
-        {
+        {//从建立该点已经超过2帧
+         //但是观测到该点的关键帧却不超过 chThobs 帧 则不合格
             pMP->SetBadFlag();
             lit = mlpRecentAddedMapPoints.erase(lit);
         }
         else if(((int)nCurrentKFid-(int)pMP->mnFirstKFid)>=3)
+            //若超过三帧,该点依然存在,则认为是好点 从检测中剔除
             lit = mlpRecentAddedMapPoints.erase(lit);
         else
             lit++;
@@ -1181,8 +1195,8 @@ void LocalMapping::CreateNewMapPoints()
         // Check first that baseline is not too short
         cv::Mat Ow2 = pKF2->GetCameraCenter();
         cv::Mat vBaseline = Ow2-Ow1;
+        //先计算两帧的运动基线
         const float baseline = cv::norm(vBaseline);
-
         if(!mbMonocular)
         {
             if(baseline<pKF2->mb)
@@ -1192,7 +1206,7 @@ void LocalMapping::CreateNewMapPoints()
         {
             const float medianDepthKF2 = pKF2->ComputeSceneMedianDepth(2);
             const float ratioBaselineDepth = baseline/medianDepthKF2;
-
+            //如果景深不够, 则不进行三角化 不生成3d点
             if(ratioBaselineDepth<0.01)
                 continue;
         }
@@ -1234,9 +1248,11 @@ void LocalMapping::CreateNewMapPoints()
             bool bStereo2 = kp2_ur>=0;
 
             // Check parallax between rays
+            // 利用匹配点反投 得到视差角
             cv::Mat xn1 = (cv::Mat_<float>(3,1) << (kp1.pt.x-cx1)*invfx1, (kp1.pt.y-cy1)*invfy1, 1.0);
             cv::Mat xn2 = (cv::Mat_<float>(3,1) << (kp2.pt.x-cx2)*invfx2, (kp2.pt.y-cy2)*invfy2, 1.0);
 
+            //转到世界坐标系中
             cv::Mat ray1 = Rwc1*xn1;
             cv::Mat ray2 = Rwc2*xn2;
             const float cosParallaxRays = ray1.dot(ray2)/(cv::norm(ray1)*cv::norm(ray2));
@@ -1250,9 +1266,11 @@ void LocalMapping::CreateNewMapPoints()
             else if(bStereo2)
                 cosParallaxStereo2 = cos(2*atan2(pKF2->mb/2,pKF2->mvDepth[idx2]));
 
+            //视差角
             cosParallaxStereo = min(cosParallaxStereo1,cosParallaxStereo2);
 
             cv::Mat x3D;
+            //视差角小时 用三角法恢复深度
             if(cosParallaxRays<cosParallaxStereo && cosParallaxRays>0 && (bStereo1 || bStereo2 || cosParallaxRays<0.9998))
             {
                 // Linear Triangulation Method
@@ -1297,6 +1315,7 @@ void LocalMapping::CreateNewMapPoints()
                 continue;
 
             //Check reprojection error in first keyframe
+            //计算kp1重投影误差
             const float &sigmaSquare1 = mpCurrentKeyFrame->mvLevelSigma2[kp1.octave];
             const float x1 = Rcw1.row(0).dot(x3Dt)+tcw1.at<float>(0);
             const float y1 = Rcw1.row(1).dot(x3Dt)+tcw1.at<float>(1);
@@ -1324,6 +1343,7 @@ void LocalMapping::CreateNewMapPoints()
             }
 
             //Check reprojection error in second keyframe
+            //计算kp2重投影误差
             const float sigmaSquare2 = pKF2->mvLevelSigma2[kp2.octave];
             const float x2 = Rcw2.row(0).dot(x3Dt)+tcw2.at<float>(0);
             const float y2 = Rcw2.row(1).dot(x3Dt)+tcw2.at<float>(1);
@@ -1350,6 +1370,7 @@ void LocalMapping::CreateNewMapPoints()
             }
 
             //Check scale consistency
+            //检查尺度连续性
             cv::Mat normal1 = x3D-Ow1;
             float dist1 = cv::norm(normal1);
 
@@ -1388,6 +1409,7 @@ void LocalMapping::CreateNewMapPoints()
     }
 }
 
+//检查并融合当前关键帧与相邻帧 重复的mappoints
 void LocalMapping::SearchInNeighbors()
 {
     // Retrieve neighbor keyframes
@@ -1422,7 +1444,9 @@ void LocalMapping::SearchInNeighbors()
     for(vector<KeyFrame*>::iterator vit=vpTargetKFs.begin(), vend=vpTargetKFs.end(); vit!=vend; vit++)
     {
         KeyFrame* pKFi = *vit;
-
+        //投影到pkfi中 并判断是否有重复的地图点
+        //如果地图点能匹配关键帧的特征点,并且该点有对应的地图点,那么将两个地图点合并
+        //如果没有 则添加为新点
         matcher.Fuse(pKFi,vpMapPointMatches);
     }
 

@@ -98,7 +98,7 @@ void System::SaveKeyFrameTrajectoryNavState(const string &filename)
     cout << endl << "NavState trajectory saved!" << endl;
 }
 
-cv::Mat System::TrackMonoVI(const cv::Mat &im, const std::vector<IMUData> &vimu, const double &timestamp)
+cv::Mat System::TrackMonoVI(const cv::Mat &im, const std::vector<IMUData> &vimu, const double &timestamp,const cv::Mat &velcity)
 {
     if(mSensor!=MONOCULAR)
     {
@@ -140,7 +140,7 @@ cv::Mat System::TrackMonoVI(const cv::Mat &im, const std::vector<IMUData> &vimu,
     }
     }
 
-    return mpTracker->GrabImageMonoVI(im,vimu,timestamp);
+    return mpTracker->GrabImageMonoVI(im,vimu,timestamp,velcity);
 }
 
 //-------------------------------------------------------------------------------------------
